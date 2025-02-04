@@ -9,6 +9,7 @@ import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../models/video.dart';
 import '../widgets/error_text.dart';
+import '../constants/assets.dart';
 
 class UploadScreen extends HookConsumerWidget {
   const UploadScreen({Key? key}) : super(key: key);
@@ -50,8 +51,7 @@ class UploadScreen extends HookConsumerWidget {
 
         // TODO: Generate thumbnail from video
         // For now, we'll use a placeholder image
-        final thumbnailFile =
-            File('assets/defaults/default_video_thumbnail.jpg');
+        final thumbnailFile = File(AssetPaths.defaultVideoThumbnail);
 
         isUploading.value = true;
         final videoFile = File(result.files.single.path!);

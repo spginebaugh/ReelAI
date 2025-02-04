@@ -12,6 +12,7 @@ import '../models/video.dart';
 import '../screens/edit_video_screen.dart';
 import '../widgets/error_text.dart';
 import 'package:uuid/uuid.dart';
+import '../constants/assets.dart';
 
 class CameraScreen extends HookConsumerWidget {
   const CameraScreen({super.key});
@@ -106,8 +107,7 @@ class CameraScreen extends HookConsumerWidget {
           final videoFile = File(xFile.path);
           // TODO: Generate thumbnail from video
           // For now, use a placeholder
-          final thumbnailFile =
-              File('assets/defaults/default_video_thumbnail.jpg');
+          final thumbnailFile = File(AssetPaths.defaultVideoThumbnail);
 
           final videoId = await ref.read(videoServiceProvider).uploadVideo(
                 userId: currentUser.value!.id,
