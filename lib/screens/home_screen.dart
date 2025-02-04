@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../state/video_provider.dart';
 import '../widgets/video_card.dart';
 import '../models/video.dart';
-import 'upload_screen.dart'; // You can create a separate upload screen
-import 'my_videos_screen.dart';
-import 'camera_screen.dart';
-import 'settings_screen.dart';
+import '../router/route_names.dart';
+import '../router/route_paths.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -33,9 +32,8 @@ class HomeScreen extends ConsumerWidget {
               title: 'Take Video',
               icon: Icons.videocam,
               onTap: () async {
-                final videoPath = await Navigator.push<String>(
-                  context,
-                  MaterialPageRoute(builder: (_) => const CameraScreen()),
+                final videoPath = await context.pushNamed<String>(
+                  RouteNames.camera,
                 );
 
                 if (videoPath != null && context.mounted) {
@@ -48,34 +46,19 @@ class HomeScreen extends ConsumerWidget {
             _MenuCard(
               title: 'My Videos',
               icon: Icons.video_library,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MyVideosScreen()),
-                );
-              },
+              onTap: () => context.pushNamed(RouteNames.myVideos),
             ),
             const SizedBox(height: 16),
             _MenuCard(
               title: 'Upload Videos',
               icon: Icons.upload_file,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UploadScreen()),
-                );
-              },
+              onTap: () => context.pushNamed(RouteNames.upload),
             ),
             const SizedBox(height: 16),
             _MenuCard(
               title: 'User Settings',
               icon: Icons.settings,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
+              onTap: () => context.pushNamed(RouteNames.settings),
             ),
           ],
         ),

@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:reel_ai/screens/home_screen.dart';
+import 'package:reel_ai/router/app_router.dart';
 import 'package:reel_ai/screens/login_screen.dart';
-import 'package:reel_ai/screens/signup_screen.dart';
 import 'package:reel_ai/state/auth_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -33,28 +32,16 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
     final authState = ref.watch(authStateProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Reel AI',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: authState.when(
-        data: (user) => user != null ? const HomeScreen() : const LoginScreen(),
-        loading: () => const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        error: (_, __) => const LoginScreen(),
-      ),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignupScreen(),
-        '/home': (context) => const HomeScreen(),
-      },
+      routerConfig: router,
     );
   }
 }

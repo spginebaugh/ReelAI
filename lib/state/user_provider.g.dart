@@ -157,7 +157,7 @@ class _UserProfileProviderElement
   String get userId => (origin as UserProfileProvider).userId;
 }
 
-String _$currentUserHash() => r'1a380125e5db52dc5b8a3af19f15744cffa4d541';
+String _$currentUserHash() => r'008386cb21fa1ae96a0a4623d9c68634bcf98441';
 
 /// See also [CurrentUser].
 @ProviderFor(CurrentUser)

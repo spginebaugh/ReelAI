@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/video.dart';
-import '../screens/video_screen.dart';
-import '../screens/edit_video_screen.dart';
+import '../router/route_names.dart';
 
 class VideoCard extends StatelessWidget {
   final Video video;
@@ -14,24 +14,18 @@ class VideoCard extends StatelessWidget {
       child: ListTile(
         title: Text(video.title),
         subtitle: Text('Uploaded on: ${video.uploadTime.toLocal()}'),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VideoScreen(videoUrl: video.videoUrl),
-            ),
-          );
-        },
+        onTap: () => context.pushNamed(
+          RouteNames.video,
+          pathParameters: {'id': video.id},
+          extra: video.videoUrl,
+        ),
         trailing: IconButton(
           icon: const Icon(Icons.edit),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EditVideoScreen(video: video),
-              ),
-            );
-          },
+          onPressed: () => context.pushNamed(
+            RouteNames.editVideo,
+            pathParameters: {'id': video.id},
+            extra: video,
+          ),
         ),
       ),
     );

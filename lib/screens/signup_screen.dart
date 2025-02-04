@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:reel_ai/router/route_names.dart';
 import 'package:reel_ai/state/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -151,9 +153,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: () => context.goNamed(RouteNames.login),
                   child: const Text('Already have an account? Login'),
                 ),
                 if (authState.hasError)
