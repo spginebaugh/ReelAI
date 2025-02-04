@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../services/permissions_service.dart';
 import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../models/video.dart';
@@ -31,8 +31,9 @@ class CameraScreen extends HookConsumerWidget {
         DeviceOrientation.portraitUp,
       ]);
 
-      Permission.camera.request().then((status) {
-        if (status.isGranted) {
+      PermissionsService.requestCameraAndMicrophonePermissions()
+          .then((granted) {
+        if (granted) {
           availableCameras().then((cameras) {
             if (cameras.isNotEmpty) {
               debugPrint('Available cameras: ${cameras.length}');
@@ -59,6 +60,8 @@ class CameraScreen extends HookConsumerWidget {
               });
             }
           });
+        } else {
+          errorMessage.value = 'Camera and microphone permissions are required';
         }
       });
 

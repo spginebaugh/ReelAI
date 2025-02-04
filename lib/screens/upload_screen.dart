@@ -4,8 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:uuid/uuid.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import '../services/permissions_service.dart';
 import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../models/video.dart';
@@ -22,20 +21,6 @@ class UploadScreen extends HookConsumerWidget {
     final descriptionController = useTextEditingController();
     final currentUser = ref.watch(currentUserProvider);
 
-    Future<bool> requestPermissions() async {
-      if (Platform.isAndroid) {
-        final androidVersion = await DeviceInfoPlugin().androidInfo;
-        if (androidVersion.version.sdkInt >= 33) {
-          final videoPermission = await Permission.videos.request();
-          return videoPermission.isGranted;
-        } else {
-          final storagePermission = await Permission.storage.request();
-          return storagePermission.isGranted;
-        }
-      }
-      return true;
-    }
-
     Future<void> pickAndUploadVideo() async {
       errorMessage.value = null;
 
@@ -45,7 +30,8 @@ class UploadScreen extends HookConsumerWidget {
       }
 
       try {
-        final hasPermission = await requestPermissions();
+        final hasPermission =
+            await PermissionsService.requestStoragePermission();
         if (!hasPermission) {
           errorMessage.value =
               'Permission denied. Please grant access to videos.';
@@ -62,7 +48,7 @@ class UploadScreen extends HookConsumerWidget {
           return;
         }
 
-        // TODO: Implement thumbnail generation
+        // TODO: Generate thumbnail from video
         // For now, we'll use a placeholder image
         final thumbnailFile =
             File('assets/defaults/default_video_thumbnail.jpg');
