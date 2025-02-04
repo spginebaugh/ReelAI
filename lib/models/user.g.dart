@@ -15,10 +15,10 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       profileThumbnailUrl: json['profileThumbnailUrl'] as String?,
       isDeleted: json['isDeleted'] as bool? ?? false,
       deletedAt: json['deletedAt'] as String?,
-      createdAt: _timestampFromJson(json['createdAt'] as Timestamp),
-      updatedAt: json['updatedAt'] == null
-          ? null
-          : DateTime.parse(json['updatedAt'] as String),
+      createdAt:
+          const TimestampConverter().fromJson(json['createdAt'] as Timestamp),
+      updatedAt: _$JsonConverterFromJson<Timestamp, DateTime>(
+          json['updatedAt'], const TimestampConverter().fromJson),
     );
 
 Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
@@ -31,6 +31,19 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'profileThumbnailUrl': instance.profileThumbnailUrl,
       'isDeleted': instance.isDeleted,
       'deletedAt': instance.deletedAt,
-      'createdAt': _timestampToJson(instance.createdAt),
-      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'createdAt': const TimestampConverter().toJson(instance.createdAt),
+      'updatedAt': _$JsonConverterToJson<Timestamp, DateTime>(
+          instance.updatedAt, const TimestampConverter().toJson),
     };
+
+Value? _$JsonConverterFromJson<Json, Value>(
+  Object? json,
+  Value? Function(Json json) fromJson,
+) =>
+    json == null ? null : fromJson(json as Json);
+
+Json? _$JsonConverterToJson<Json, Value>(
+  Value? value,
+  Json? Function(Value value) toJson,
+) =>
+    value == null ? null : toJson(value);

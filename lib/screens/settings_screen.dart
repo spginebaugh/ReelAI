@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../state/user_provider.dart';
 import '../state/auth_provider.dart';
 import '../widgets/error_text.dart';
+import '../utils/app_theme.dart';
 
 class SettingsScreen extends HookConsumerWidget {
   const SettingsScreen({super.key});
@@ -78,6 +79,14 @@ class SettingsScreen extends HookConsumerWidget {
                   if (errorMessage.value != null)
                     ErrorText(message: errorMessage.value!),
                   Card(
+                    color: AppColors.lightBackground,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: AppColors.surfaceColor,
+                        width: 1,
+                      ),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(

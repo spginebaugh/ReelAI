@@ -13,7 +13,8 @@ _$VideoImpl _$$VideoImplFromJson(Map<String, dynamic> json) => _$VideoImpl(
       description: json['description'] as String?,
       videoUrl: json['videoUrl'] as String,
       thumbnailUrl: json['thumbnailUrl'] as String?,
-      uploadTime: Video._timestampFromJson(json['uploadTime']),
+      uploadTime:
+          const TimestampConverter().fromJson(json['uploadTime'] as Timestamp),
       privacy: json['privacy'] as String? ?? 'public',
       likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
@@ -28,7 +29,7 @@ Map<String, dynamic> _$$VideoImplToJson(_$VideoImpl instance) =>
       'description': instance.description,
       'videoUrl': instance.videoUrl,
       'thumbnailUrl': instance.thumbnailUrl,
-      'uploadTime': Video._timestampToJson(instance.uploadTime),
+      'uploadTime': const TimestampConverter().toJson(instance.uploadTime),
       'privacy': instance.privacy,
       'likesCount': instance.likesCount,
       'commentsCount': instance.commentsCount,

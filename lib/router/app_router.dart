@@ -13,7 +13,6 @@ import '../screens/signup_screen.dart';
 import '../screens/upload_screen.dart';
 import '../screens/video_screen.dart';
 import '../state/auth_provider.dart';
-import '../state/video_provider.dart';
 import 'route_names.dart';
 import 'route_paths.dart';
 
@@ -84,7 +83,6 @@ GoRouter appRouter(AppRouterRef ref) {
         path: RoutePaths.video,
         name: RouteNames.video,
         builder: (context, state) {
-          final videoId = state.pathParameters['id']!;
           final videoUrl = state.extra as String?;
           if (videoUrl == null) {
             // If videoUrl is not provided in extra, fetch it using the ID
@@ -98,7 +96,6 @@ GoRouter appRouter(AppRouterRef ref) {
         path: RoutePaths.editVideo,
         name: RouteNames.editVideo,
         builder: (context, state) {
-          final videoId = state.pathParameters['id']!;
           final video = state.extra as Video?;
           if (video == null) {
             // If video is not provided in extra, fetch it using the ID

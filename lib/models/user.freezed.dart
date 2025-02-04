@@ -28,8 +28,9 @@ mixin _$User {
   String? get profileThumbnailUrl => throw _privateConstructorUsedError;
   bool get isDeleted => throw _privateConstructorUsedError;
   String? get deletedAt => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
+  @TimestampConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
+  @TimestampConverter()
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this User to a JSON map.
@@ -55,9 +56,8 @@ abstract class $UserCopyWith<$Res> {
       String? profileThumbnailUrl,
       bool isDeleted,
       String? deletedAt,
-      @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-      DateTime createdAt,
-      DateTime? updatedAt});
+      @TimestampConverter() DateTime createdAt,
+      @TimestampConverter() DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -147,9 +147,8 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       String? profileThumbnailUrl,
       bool isDeleted,
       String? deletedAt,
-      @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-      DateTime createdAt,
-      DateTime? updatedAt});
+      @TimestampConverter() DateTime createdAt,
+      @TimestampConverter() DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -232,9 +231,8 @@ class _$UserImpl implements _User {
       this.profileThumbnailUrl,
       this.isDeleted = false,
       this.deletedAt,
-      @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-      required this.createdAt,
-      this.updatedAt});
+      @TimestampConverter() required this.createdAt,
+      @TimestampConverter() this.updatedAt});
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserImplFromJson(json);
@@ -257,9 +255,10 @@ class _$UserImpl implements _User {
   @override
   final String? deletedAt;
   @override
-  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
+  @TimestampConverter()
   final DateTime createdAt;
   @override
+  @TimestampConverter()
   final DateTime? updatedAt;
 
   @override
@@ -332,9 +331,8 @@ abstract class _User implements User {
       final String? profileThumbnailUrl,
       final bool isDeleted,
       final String? deletedAt,
-      @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
-      required final DateTime createdAt,
-      final DateTime? updatedAt}) = _$UserImpl;
+      @TimestampConverter() required final DateTime createdAt,
+      @TimestampConverter() final DateTime? updatedAt}) = _$UserImpl;
 
   factory _User.fromJson(Map<String, dynamic> json) = _$UserImpl.fromJson;
 
@@ -355,9 +353,10 @@ abstract class _User implements User {
   @override
   String? get deletedAt;
   @override
-  @JsonKey(fromJson: _timestampFromJson, toJson: _timestampToJson)
+  @TimestampConverter()
   DateTime get createdAt;
   @override
+  @TimestampConverter()
   DateTime? get updatedAt;
 
   /// Create a copy of User

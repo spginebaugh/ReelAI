@@ -1,8 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:reel_ai/models/user.dart' as app;
 import 'package:reel_ai/state/user_provider.dart';
-import 'package:flutter/foundation.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 

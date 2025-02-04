@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:uuid/uuid.dart';
 import '../services/permissions_service.dart';
 import '../state/video_provider.dart';
 import '../state/user_provider.dart';
-import '../models/video.dart';
 import '../widgets/error_text.dart';
 import '../constants/assets.dart';
 

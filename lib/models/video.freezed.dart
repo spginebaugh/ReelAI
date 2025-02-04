@@ -26,7 +26,7 @@ mixin _$Video {
   String? get description => throw _privateConstructorUsedError;
   String get videoUrl => throw _privateConstructorUsedError;
   String? get thumbnailUrl => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
+  @TimestampConverter()
   DateTime get uploadTime => throw _privateConstructorUsedError;
   String get privacy => throw _privateConstructorUsedError;
   int get likesCount => throw _privateConstructorUsedError;
@@ -54,9 +54,7 @@ abstract class $VideoCopyWith<$Res> {
       String? description,
       String videoUrl,
       String? thumbnailUrl,
-      @JsonKey(
-          fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
-      DateTime uploadTime,
+      @TimestampConverter() DateTime uploadTime,
       String privacy,
       int likesCount,
       int commentsCount,
@@ -153,9 +151,7 @@ abstract class _$$VideoImplCopyWith<$Res> implements $VideoCopyWith<$Res> {
       String? description,
       String videoUrl,
       String? thumbnailUrl,
-      @JsonKey(
-          fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
-      DateTime uploadTime,
+      @TimestampConverter() DateTime uploadTime,
       String privacy,
       int likesCount,
       int commentsCount,
@@ -246,9 +242,7 @@ class _$VideoImpl extends _Video {
       this.description,
       required this.videoUrl,
       this.thumbnailUrl,
-      @JsonKey(
-          fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
-      required this.uploadTime,
+      @TimestampConverter() required this.uploadTime,
       this.privacy = 'public',
       this.likesCount = 0,
       this.commentsCount = 0,
@@ -271,7 +265,7 @@ class _$VideoImpl extends _Video {
   @override
   final String? thumbnailUrl;
   @override
-  @JsonKey(fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
+  @TimestampConverter()
   final DateTime uploadTime;
   @override
   @JsonKey()
@@ -357,9 +351,7 @@ abstract class _Video extends Video {
       final String? description,
       required final String videoUrl,
       final String? thumbnailUrl,
-      @JsonKey(
-          fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
-      required final DateTime uploadTime,
+      @TimestampConverter() required final DateTime uploadTime,
       final String privacy,
       final int likesCount,
       final int commentsCount,
@@ -381,7 +373,7 @@ abstract class _Video extends Video {
   @override
   String? get thumbnailUrl;
   @override
-  @JsonKey(fromJson: Video._timestampFromJson, toJson: Video._timestampToJson)
+  @TimestampConverter()
   DateTime get uploadTime;
   @override
   String get privacy;

@@ -6,13 +6,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../services/permissions_service.dart';
-import '../state/video_provider.dart';
 import '../state/user_provider.dart';
-import '../models/video.dart';
-import '../screens/edit_video_screen.dart';
 import '../widgets/error_text.dart';
-import 'package:uuid/uuid.dart';
-import '../constants/assets.dart';
 import '../screens/uploading_screen.dart';
 
 class CameraScreen extends HookConsumerWidget {

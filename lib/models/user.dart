@@ -1,11 +1,19 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
 
-DateTime _timestampFromJson(Timestamp timestamp) => timestamp.toDate();
-Timestamp _timestampToJson(DateTime dateTime) => Timestamp.fromDate(dateTime);
+class TimestampConverter implements JsonConverter<DateTime, Timestamp> {
+  const TimestampConverter();
+
+  @override
+  DateTime fromJson(Timestamp timestamp) => timestamp.toDate();
+
+  @override
+  Timestamp toJson(DateTime date) => Timestamp.fromDate(date);
+}
 
 @freezed
 class User with _$User {
@@ -18,12 +26,8 @@ class User with _$User {
     String? profileThumbnailUrl,
     @Default(false) bool isDeleted,
     String? deletedAt,
-    @JsonKey(
-      fromJson: _timestampFromJson,
-      toJson: _timestampToJson,
-    )
-    required DateTime createdAt,
-    DateTime? updatedAt,
+    @TimestampConverter() required DateTime createdAt,
+    @TimestampConverter() DateTime? updatedAt,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

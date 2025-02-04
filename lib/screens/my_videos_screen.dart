@@ -28,6 +28,7 @@ class MyVideosScreen extends HookConsumerWidget {
             data: (videos) => videos.isEmpty
                 ? const Center(child: Text('No videos yet'))
                 : ListView.builder(
+                    padding: EdgeInsets.zero,
                     itemCount: videos.length,
                     itemBuilder: (context, index) =>
                         VideoCard(video: videos[index]),

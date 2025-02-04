@@ -3,9 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:reel_ai/router/app_router.dart';
-import 'package:reel_ai/screens/login_screen.dart';
-import 'package:reel_ai/state/auth_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:reel_ai/utils/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,14 +32,11 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final authState = ref.watch(authStateProvider);
 
     return MaterialApp.router(
       title: 'Reel AI',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light, // Force light mode
       routerConfig: router,
     );
   }
