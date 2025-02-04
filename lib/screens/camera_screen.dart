@@ -13,6 +13,7 @@ import '../screens/edit_video_screen.dart';
 import '../widgets/error_text.dart';
 import 'package:uuid/uuid.dart';
 import '../constants/assets.dart';
+import '../screens/uploading_screen.dart';
 
 class CameraScreen extends HookConsumerWidget {
   const CameraScreen({super.key});
@@ -94,51 +95,32 @@ class CameraScreen extends HookConsumerWidget {
     Future<void> stopRecording() async {
       if (!isInitialized.value || !isRecording.value) return;
 
+      XFile? recordedVideo;
       try {
-        final xFile = await cameraController.value!.stopVideoRecording();
+        recordedVideo = await cameraController.value!.stopVideoRecording();
         isRecording.value = false;
         errorMessage.value = null;
-
-        if (!context.mounted || currentUser.value == null) return;
-
-        isUploading.value = true;
-
-        try {
-          final videoFile = File(xFile.path);
-          // TODO: Generate thumbnail from video
-          // For now, use a placeholder
-          final thumbnailFile = File(AssetPaths.defaultVideoThumbnail);
-
-          final videoId = await ref.read(videoServiceProvider).uploadVideo(
-                userId: currentUser.value!.id,
-                videoFile: videoFile,
-                thumbnailFile: thumbnailFile,
-                title: 'Camera Recording',
-                description: 'Recorded from camera',
-              );
-
-          final video = await ref.read(videoServiceProvider).getVideo(videoId);
-
-          if (!context.mounted || video == null) return;
-
-          // Navigate to edit screen
-          await Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EditVideoScreen(video: video),
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error uploading video: $e');
-          if (!context.mounted) return;
-          errorMessage.value = 'Error uploading video: ${e.toString()}';
-          Navigator.pop(context);
-        } finally {
-          isUploading.value = false;
-        }
       } catch (e) {
         debugPrint('Error stopping video recording: $e');
         errorMessage.value = 'Failed to stop recording: ${e.toString()}';
+        return;
+      }
+
+      if (!context.mounted || currentUser.value == null) return;
+
+      // Navigate immediately after stopping recording
+      final shouldContinue = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UploadingScreen(
+            videoFile: File(recordedVideo!.path),
+            currentUser: currentUser.value!,
+          ),
+        ),
+      );
+
+      if (shouldContinue == true && context.mounted) {
+        Navigator.pop(context);
       }
     }
 
