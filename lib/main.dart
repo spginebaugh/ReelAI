@@ -6,10 +6,18 @@ import 'package:reel_ai/screens/home_screen.dart';
 import 'package:reel_ai/screens/login_screen.dart';
 import 'package:reel_ai/screens/signup_screen.dart';
 import 'package:reel_ai/state/auth_provider.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp();
+
+  // Initialize App Check with debug provider
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+  );
 
   // Set preferred orientations to portrait only
   await SystemChrome.setPreferredOrientations([
@@ -17,11 +25,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {

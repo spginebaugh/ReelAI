@@ -19,7 +19,7 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.network(widget.video.url)
+    _controller = VideoPlayerController.network(widget.video.videoUrl)
       ..initialize().then((_) {
         _chewieController = ChewieController(
           videoPlayerController: _controller,

@@ -1,0 +1,96 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    function isValidContentType(contentType, allowedTypes) {
+      return contentType in allowedTypes;
+    }
+    
+    function isWithinSizeLimit(maxSize) {
+      return request.resource.size <= maxSize;
+    }
+
+    // Public Assets section
+    match /public/{category}/{assetName} {
+      // Anyone can read public assets
+      allow read: if true;
+      
+      // Only admins can write to public assets
+      allow write: if isAdmin() 
+        && (
+          category == 'assets' 
+          ? isValidContentType(request.resource.contentType, [
+              'image/jpeg',
+              'image/png',
+              'image/webp'
+            ]) && isWithinSizeLimit(5 * 1024 * 1024)  // 5MB for public assets
+          : false  // Other categories need explicit rules
+        );
+    }
+
+    // Videos section
+    match /videos/{userId}/{type}/{videoId}/{fileName} {
+      // Allow read for all authenticated users (assuming videos are public)
+      allow read: if isAuthenticated();
+      
+      // Only allow upload by video owner with content and size validation
+      allow create: if isOwner(userId)
+        && (type == "original" 
+            ? isValidContentType(request.resource.contentType, [
+                'video/mp4',
+                'video/quicktime',
+                'video/x-msvideo'
+              ]) 
+            && isWithinSizeLimit(500 * 1024 * 1024)  // 500MB for videos
+            : type == "thumbnails" 
+            && isValidContentType(request.resource.contentType, [
+                'image/jpeg',
+                'image/png'
+              ])
+            && isWithinSizeLimit(5 * 1024 * 1024));  // 5MB for thumbnails
+      
+      // Allow owner to delete their content
+      allow delete: if isOwner(userId);
+      
+      // Prevent updates - files should be immutable
+      allow update: if false;
+    }
+
+    // User profile section
+    match /users/{userId}/profile/{type}/{fileName} {
+      // Allow public read for profile assets
+      allow read: if isAuthenticated();
+      
+      // Only allow owner to upload with image validation
+      allow create, update: if isOwner(userId)
+        && isValidContentType(request.resource.contentType, [
+          'image/jpeg',
+          'image/png',
+          'image/webp'
+        ])
+        && isWithinSizeLimit(5 * 1024 * 1024);  // 5MB limit for profile images
+      
+      allow delete: if isOwner(userId);
+    }
+
+    // Temporary uploads section
+    match /users/{userId}/uploads/temp/{fileName} {
+      // Strict owner-only access
+      allow read, write: if isOwner(userId);
+      
+      // Files older than 24 hours should be deleted by a Cloud Function
+    }
+  }
+} 

@@ -1,13 +1,22 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:reel_ai/models/user.dart' as app;
+import 'package:reel_ai/state/user_provider.dart';
+import 'package:flutter/foundation.dart';
 
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Ref _ref;
+
+  AuthService(this._ref);
 
   // Stream to listen to auth changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // Get current user
+  User? get currentUser => _auth.currentUser;
 
   // Sign Up
   Future<UserCredential> createUserWithEmailAndPassword({
@@ -15,10 +24,21 @@ class AuthService {
     required String password,
   }) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      // Create user in Firestore
+      if (credential.user != null) {
+        final username = email.split('@')[0]; // Default username from email
+        await _ref.read(currentUserProvider.notifier).createOrUpdateUser(
+              username: username,
+              email: email,
+            );
+      }
+
+      return credential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -41,7 +61,11 @@ class AuthService {
 
   // Sign Out
   Future<void> signOut() async {
-    await _auth.signOut();
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      throw Exception('Failed to sign out: $e');
+    }
   }
 
   String _handleAuthException(FirebaseAuthException e) {

@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      allow read: if true;  // Public read access for user profiles
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if false;  // Prevent user deletion through client
+      
+      // Validate user document fields
+      function isValidUser() {
+        let user = request.resource.data;
+        return user.username is string &&
+               user.username.size() >= 2 &&
+               user.email is string &&
+               user.email.matches('^[^@]+@[^@]+\\.[^@]+$') &&
+               (user.profilePicUrl == null || user.profilePicUrl is string) &&
+               (user.bio == null || user.bio is string) &&
+               user.createdAt is timestamp &&
+               user.followersCount is number &&
+               user.followingCount is number;
+      }
+      
+      allow write: if isValidUser();
+    }
+  }
+} 

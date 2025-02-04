@@ -1,28 +1,105 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../models/video.dart';
+import 'firestore_service.dart';
+import 'storage_service.dart';
+import 'package:uuid/uuid.dart';
 
 class VideoService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService;
+  final StorageService _storageService;
 
-  // Upload video to Firebase Storage
-  Future<String> uploadVideo(File videoFile, String videoId) async {
-    Reference ref = _storage.ref().child('videos/$videoId.mp4');
-    UploadTask uploadTask = ref.putFile(videoFile);
-    TaskSnapshot snapshot = await uploadTask;
-    return await snapshot.ref.getDownloadURL();
-  }
+  VideoService({
+    required FirestoreService firestoreService,
+    required StorageService storageService,
+  })  : _firestoreService = firestoreService,
+        _storageService = storageService;
 
-  // Save video metadata to Firestore
-  Future<void> saveVideoMetadata(Video video) async {
-    await _firestore.collection('videos').doc(video.id).set(video.toMap());
-  }
-
-  // Retrieve video metadata from Firestore
   Stream<List<Video>> getVideos() {
-    return _firestore.collection('videos').snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => Video.fromMap(doc.data())).toList());
+    return _firestoreService.getPublicVideos();
+  }
+
+  Stream<List<Video>> getUserVideos(String userId) {
+    return _firestoreService.getUserVideos(userId);
+  }
+
+  Future<Video?> getVideo(String videoId) {
+    return _firestoreService.getVideo(videoId);
+  }
+
+  Future<String> uploadVideo({
+    required String userId,
+    required File videoFile,
+    File? thumbnailFile,
+    required String title,
+    required String description,
+    String privacy = 'public',
+  }) async {
+    // Verify video file exists
+    if (!videoFile.existsSync()) {
+      throw Exception('Video file does not exist at path: ${videoFile.path}');
+    }
+
+    final videoId = const Uuid().v4();
+
+    // Upload video and get URL
+    final videoUrl = await _storageService.uploadVideo(
+      userId: userId,
+      videoId: videoId,
+      videoFile: videoFile,
+    );
+
+    // Upload thumbnail if provided
+    String? thumbnailUrl;
+    if (thumbnailFile != null) {
+      if (thumbnailFile.existsSync()) {
+        thumbnailUrl = await _storageService.uploadThumbnail(
+          userId: userId,
+          videoId: videoId,
+          thumbnailFile: thumbnailFile,
+        );
+      }
+    }
+
+    // Create the video document with all required fields
+    final video = Video(
+      id: '', // Will be set by Firestore
+      uploaderId: userId,
+      title: title,
+      description: description,
+      privacy: privacy,
+      uploadTime: DateTime.now(),
+      videoUrl: videoUrl,
+      thumbnailUrl: thumbnailUrl,
+      likesCount: 0,
+      commentsCount: 0,
+      isProcessing: false,
+    );
+
+    // Create the video document in Firestore
+    final createdVideoId = await _firestoreService.createVideo(video);
+
+    return createdVideoId;
+  }
+
+  Future<void> deleteVideo({
+    required String userId,
+    required String videoId,
+  }) async {
+    // Delete storage files first
+    await _storageService.deleteVideoContent(
+      userId: userId,
+      videoId: videoId,
+    );
+
+    // Then delete the Firestore document
+    await _firestoreService.deleteVideo(videoId);
+  }
+
+  Future<void> incrementLikes(String videoId) {
+    return _firestoreService.incrementVideoLikes(videoId);
+  }
+
+  Future<void> incrementComments(String videoId) {
+    return _firestoreService.incrementVideoComments(videoId);
   }
 }

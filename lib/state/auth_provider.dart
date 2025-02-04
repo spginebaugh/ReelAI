@@ -4,6 +4,11 @@ import 'package:reel_ai/services/auth_service.dart';
 
 final authStateProvider = StreamProvider<User?>((ref) {
   final authService = ref.watch(authServiceProvider);
+  // Force immediate check of current auth state
+  final currentUser = authService.currentUser;
+  if (currentUser == null) {
+    return Stream.value(null);
+  }
   return authService.authStateChanges;
 });
 
@@ -20,21 +25,32 @@ class AuthController extends Notifier<AsyncValue<void>> {
 
   Future<void> signIn({required String email, required String password}) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => ref
-        .read(authServiceProvider)
-        .signInWithEmailAndPassword(email: email, password: password));
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(authServiceProvider)
+          .signInWithEmailAndPassword(email: email, password: password);
+      // Force refresh the auth state
+      ref.invalidate(authStateProvider);
+    });
   }
 
   Future<void> signUp({required String email, required String password}) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => ref
-        .read(authServiceProvider)
-        .createUserWithEmailAndPassword(email: email, password: password));
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(authServiceProvider)
+          .createUserWithEmailAndPassword(email: email, password: password);
+      // Force refresh the auth state
+      ref.invalidate(authStateProvider);
+    });
   }
 
   Future<void> signOut() async {
     state = const AsyncValue.loading();
-    state =
-        await AsyncValue.guard(() => ref.read(authServiceProvider).signOut());
+    state = await AsyncValue.guard(() async {
+      await ref.read(authServiceProvider).signOut();
+      // Force refresh the auth state
+      ref.invalidate(authStateProvider);
+    });
   }
 }

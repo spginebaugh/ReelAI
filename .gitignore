@@ -54,3 +54,6 @@ firebase_options.dart
 .env
 .env.local
 .env.*
+
+# Default assets
+assets/defaults/

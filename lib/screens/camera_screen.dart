@@ -6,7 +6,8 @@ import 'package:camera/camera.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../services/video_service.dart';
+import '../state/video_provider.dart';
+import '../state/user_provider.dart';
 import '../models/video.dart';
 import '../screens/edit_video_screen.dart';
 import 'package:uuid/uuid.dart';
@@ -20,7 +21,7 @@ class CameraScreen extends HookConsumerWidget {
     final isRecording = useState(false);
     final isInitialized = useState(false);
     final isUploading = useState(false);
-    final videoService = VideoService();
+    final currentUser = ref.watch(currentUserProvider);
 
     useEffect(() {
       // Lock orientation to portrait
@@ -88,31 +89,29 @@ class CameraScreen extends HookConsumerWidget {
       try {
         final xFile = await cameraController.value!.stopVideoRecording();
         isRecording.value = false;
+
+        if (!context.mounted || currentUser.value == null) return;
+
         isUploading.value = true;
 
-        if (!context.mounted) return;
-
         try {
-          final videoId = const Uuid().v4();
           final videoFile = File(xFile.path);
+          // TODO: Generate thumbnail from video
+          // For now, use a placeholder
+          final thumbnailFile =
+              File('assets/defaults/default_video_thumbnail.jpg');
 
-          // Upload video to storage
-          final videoUrl = await videoService.uploadVideo(videoFile, videoId);
+          final videoId = await ref.read(videoServiceProvider).uploadVideo(
+                userId: currentUser.value!.id,
+                videoFile: videoFile,
+                thumbnailFile: thumbnailFile,
+                title: 'Camera Recording',
+                description: 'Recorded from camera',
+              );
 
-          // Create video metadata
-          final video = Video(
-            id: videoId,
-            title: 'Untitled Video',
-            url: videoUrl,
-            uploaderId:
-                'current_user_id', // You'll need to get this from your auth service
-            uploadDate: DateTime.now(),
-          );
+          final video = await ref.read(videoServiceProvider).getVideo(videoId);
 
-          // Save video metadata to Firestore
-          await videoService.saveVideoMetadata(video);
-
-          if (!context.mounted) return;
+          if (!context.mounted || video == null) return;
 
           // Navigate to edit screen
           await Navigator.pushReplacement(

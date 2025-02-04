@@ -6,6 +6,7 @@ import '../models/video.dart';
 import 'upload_screen.dart'; // You can create a separate upload screen
 import 'my_videos_screen.dart';
 import 'camera_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -70,7 +71,10 @@ class HomeScreen extends ConsumerWidget {
               title: 'User Settings',
               icon: Icons.settings,
               onTap: () {
-                // TODO: Navigate to User Settings screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
               },
             ),
           ],

@@ -13,12 +13,12 @@ class VideoCard extends StatelessWidget {
       margin: const EdgeInsets.all(8.0),
       child: ListTile(
         title: Text(video.title),
-        subtitle: Text('Uploaded on: ${video.uploadDate.toLocal()}'),
+        subtitle: Text('Uploaded on: ${video.uploadTime.toLocal()}'),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => VideoScreen(videoUrl: video.url),
+              builder: (context) => VideoScreen(videoUrl: video.videoUrl),
             ),
           );
         },

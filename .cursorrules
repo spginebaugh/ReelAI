@@ -8,7 +8,9 @@ Key Principles
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
 - Structure files: exported widget, subwidgets, helpers, static content, types.
 - DO NOT DOWNGRADE ANY PACKAGE VERSIONS.
+
 Dart/Flutter
+- 'flutter pub run build_runner build --delete-conflicting-outputs' is deprecated. Use 'dart run build_runner build --delete-conflicting-outputs' instead.
 - Use const constructors for immutable widgets.
 - Leverage Freezed for immutable state classes and unions.
 - Use arrow syntax for simple functions and methods.
