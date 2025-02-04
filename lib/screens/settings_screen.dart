@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../state/user_provider.dart';
 import '../state/auth_provider.dart';
+import '../widgets/error_text.dart';
 
 class SettingsScreen extends HookConsumerWidget {
   const SettingsScreen({super.key});
@@ -14,6 +15,7 @@ class SettingsScreen extends HookConsumerWidget {
     final authController = ref.watch(authControllerProvider.notifier);
     final usernameController = useTextEditingController();
     final bioController = useTextEditingController();
+    final errorMessage = useState<String?>(null);
 
     // Update controllers when user changes
     useEffect(() {
@@ -73,6 +75,8 @@ class SettingsScreen extends HookConsumerWidget {
             : ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
+                  if (errorMessage.value != null)
+                    ErrorText(message: errorMessage.value!),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -117,20 +121,14 @@ class SettingsScreen extends HookConsumerWidget {
                             alignment: Alignment.centerRight,
                             child: FilledButton.icon(
                               onPressed: () async {
+                                errorMessage.value = null;
                                 final newUsername =
                                     usernameController.text.trim();
                                 final newBio = bioController.text.trim();
 
                                 if (newUsername.isEmpty) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                            Text('Username cannot be empty'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
+                                  errorMessage.value =
+                                      'Username cannot be empty';
                                   return;
                                 }
 
@@ -143,26 +141,10 @@ class SettingsScreen extends HookConsumerWidget {
                                           username: newUsername,
                                           bio: newBio.isEmpty ? null : newBio,
                                         );
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Profile updated successfully',
-                                          ),
-                                        ),
-                                      );
-                                    }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content:
-                                              Text('Error: ${e.toString()}'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
+                                      errorMessage.value =
+                                          'Error: ${e.toString()}';
                                     }
                                   }
                                 }
@@ -179,19 +161,9 @@ class SettingsScreen extends HookConsumerWidget {
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
-          child: SelectableText.rich(
-            TextSpan(
-              children: [
-                const TextSpan(
-                  text: 'Error: ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                TextSpan(text: error.toString()),
-              ],
-            ),
+          child: ErrorText(
+            message: error.toString(),
+            textAlign: TextAlign.center,
           ),
         ),
       ),

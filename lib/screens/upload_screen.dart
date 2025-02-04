@@ -9,6 +9,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../models/video.dart';
+import '../widgets/error_text.dart';
 
 class UploadScreen extends HookConsumerWidget {
   const UploadScreen({Key? key}) : super(key: key);
@@ -16,6 +17,7 @@ class UploadScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isUploading = useState(false);
+    final errorMessage = useState<String?>(null);
     final titleController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final currentUser = ref.watch(currentUserProvider);
@@ -35,27 +37,18 @@ class UploadScreen extends HookConsumerWidget {
     }
 
     Future<void> pickAndUploadVideo() async {
+      errorMessage.value = null;
+
       if (currentUser.value == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please sign in to upload videos'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        errorMessage.value = 'Please sign in to upload videos';
         return;
       }
 
       try {
         final hasPermission = await requestPermissions();
         if (!hasPermission) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Permission denied. Please grant access to videos.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          errorMessage.value =
+              'Permission denied. Please grant access to videos.';
           return;
         }
 
@@ -65,10 +58,7 @@ class UploadScreen extends HookConsumerWidget {
         );
 
         if (result == null || result.files.single.path == null) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No video selected')),
-          );
+          errorMessage.value = 'No video selected';
           return;
         }
 
@@ -81,7 +71,7 @@ class UploadScreen extends HookConsumerWidget {
         final videoFile = File(result.files.single.path!);
 
         // Upload video using the video service
-        final videoId = await ref.read(videoServiceProvider).uploadVideo(
+        await ref.read(videoServiceProvider).uploadVideo(
               userId: currentUser.value!.id,
               videoFile: videoFile,
               thumbnailFile: thumbnailFile,
@@ -94,37 +84,11 @@ class UploadScreen extends HookConsumerWidget {
         if (!context.mounted) return;
 
         isUploading.value = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video uploaded successfully')),
-        );
-
         Navigator.pop(context);
       } catch (e) {
         if (!context.mounted) return;
-
         isUploading.value = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: SelectableText.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(
-                    text: 'Error uploading video\n',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextSpan(
-                    text: e.toString(),
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        errorMessage.value = 'Error uploading video: ${e.toString()}';
       }
     }
 
@@ -134,6 +98,8 @@ class UploadScreen extends HookConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            if (errorMessage.value != null)
+              ErrorText(message: errorMessage.value!),
             TextField(
               controller: titleController,
               decoration: const InputDecoration(

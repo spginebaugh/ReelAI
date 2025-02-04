@@ -10,6 +10,7 @@ import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../models/video.dart';
 import '../screens/edit_video_screen.dart';
+import '../widgets/error_text.dart';
 import 'package:uuid/uuid.dart';
 
 class CameraScreen extends HookConsumerWidget {
@@ -21,6 +22,7 @@ class CameraScreen extends HookConsumerWidget {
     final isRecording = useState(false);
     final isInitialized = useState(false);
     final isUploading = useState(false);
+    final errorMessage = useState<String?>(null);
     final currentUser = ref.watch(currentUserProvider);
 
     useEffect(() {
@@ -78,8 +80,10 @@ class CameraScreen extends HookConsumerWidget {
       try {
         await cameraController.value!.startVideoRecording();
         isRecording.value = true;
+        errorMessage.value = null;
       } catch (e) {
         debugPrint('Error starting video recording: $e');
+        errorMessage.value = 'Failed to start recording: ${e.toString()}';
       }
     }
 
@@ -89,6 +93,7 @@ class CameraScreen extends HookConsumerWidget {
       try {
         final xFile = await cameraController.value!.stopVideoRecording();
         isRecording.value = false;
+        errorMessage.value = null;
 
         if (!context.mounted || currentUser.value == null) return;
 
@@ -123,34 +128,14 @@ class CameraScreen extends HookConsumerWidget {
         } catch (e) {
           debugPrint('Error uploading video: $e');
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: SelectableText.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(
-                      text: 'Error uploading video\n',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    TextSpan(
-                      text: e.toString(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
+          errorMessage.value = 'Error uploading video: ${e.toString()}';
           Navigator.pop(context);
         } finally {
           isUploading.value = false;
         }
       } catch (e) {
         debugPrint('Error stopping video recording: $e');
+        errorMessage.value = 'Failed to stop recording: ${e.toString()}';
       }
     }
 
@@ -210,6 +195,16 @@ class CameraScreen extends HookConsumerWidget {
                 onPressed: () => Navigator.pop(context),
               ),
             ),
+            if (errorMessage.value != null)
+              Positioned(
+                top: 64,
+                left: 16,
+                right: 16,
+                child: ErrorText(
+                  message: errorMessage.value!,
+                  textAlign: TextAlign.center,
+                ),
+              ),
             if (isUploading.value)
               Container(
                 color: Colors.black54,
