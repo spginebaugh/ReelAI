@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import 'package:flutter_video_trimmer/flutter_video_trimmer.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/video.dart';
 import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
@@ -21,7 +21,7 @@ class EditVideoScreen extends StatefulWidget {
 }
 
 class _EditVideoScreenState extends State<EditVideoScreen> {
-  late VideoPlayerController _controller = VideoPlayerController.network(widget.video.videoUrl);
+  late VideoPlayerController _controller;
   ChewieController? _chewieController;
   late final VideoProcessingService _videoService = VideoProcessingService();
   late VideoEditState _editState = VideoEditState.initial();
@@ -39,14 +39,18 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
     try {
       // Download and save the original video
       final tempFile = await _videoService.downloadVideo(widget.video.videoUrl);
-
-      // Initialize video player and trimmer
+      
+      // Initialize video player
+      _controller = VideoPlayerController.file(tempFile);
+      await _controller.initialize();
+      
       _chewieController = await _videoService.initializePlayer(tempFile);
-      await _videoService.loadVideoIntoTrimmer(tempFile);
+      
+      final duration = await _videoService.getVideoDuration(tempFile);
       
       setState(() {
         _editState = _editState.copyWith(
-          endValue: _chewieController!.videoPlayerController.value.duration.inMilliseconds.toDouble(),
+          endValue: duration,
           isLoading: false,
           tempVideoFile: tempFile,
         );
@@ -69,10 +73,14 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
     try {
       _chewieController?.pause();
       
-      final outputPath = await _videoService.applyFilters(
+      final tempDir = await getTemporaryDirectory();
+      final outputPath = '${tempDir.path}/preview_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      
+      final filteredPath = await _videoService.applyFilters(
         inputFile: _editState.tempVideoFile!,
         filter: _editState.selectedFilter,
         brightness: _editState.brightness,
+        outputPath: outputPath,
       );
 
       // Clean up previous preview file
@@ -80,12 +88,12 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
 
       setState(() {
         _editState = _editState.copyWith(
-          currentPreviewPath: outputPath,
+          currentPreviewPath: filteredPath,
           isProcessing: false,
         );
       });
       
-      _chewieController = await _videoService.initializePlayer(File(outputPath));
+      _chewieController = await _videoService.initializePlayer(File(filteredPath));
       setState(() {});
 
     } catch (e) {
@@ -105,6 +113,7 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
     
     try {
       final outputPath = await _videoService.trimVideo(
+        inputFile: _editState.tempVideoFile!,
         startValue: _editState.startValue,
         endValue: _editState.endValue,
       );
@@ -117,7 +126,6 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
             tempVideoFile: File(outputPath),
           );
         });
-        await _applyFilters();
       }
     } catch (e) {
       setState(() => _editState = _editState.copyWith(isProcessing: false));
@@ -133,7 +141,7 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
     switch (_editState.currentMode) {
       case EditingMode.trim:
         return TrimControlsWidget(
-          trimmer: _videoService.trimmer,
+          controller: _controller,
           startValue: _editState.startValue,
           endValue: _editState.endValue,
           onChangeStart: (value) => setState(() => 
@@ -157,7 +165,7 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
       case EditingMode.brightness:
         return BrightnessControlsWidget(
           brightness: _editState.brightness,
-          onChanged: (value) => setState(() => 
+          onChanged: (value) => setState(() =>
             _editState = _editState.copyWith(brightness: value)),
           onChangeEnd: (value) => _applyFilters(),
         );
@@ -246,13 +254,15 @@ class _EditVideoScreenState extends State<EditVideoScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _editState.currentMode.index,
-        onTap: _editState.isLoading ? null : (index) {
-          setState(() {
-            _editState = _editState.copyWith(
-              currentMode: EditingMode.values[index],
-            );
-          });
-        },
+        onTap: _editState.isLoading || _editState.isProcessing
+            ? null
+            : (index) {
+                setState(() {
+                  _editState = _editState.copyWith(
+                    currentMode: EditingMode.values[index],
+                  );
+                });
+              },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.video_settings),

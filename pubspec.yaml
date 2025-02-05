@@ -54,7 +54,6 @@ dependencies:
   camera: ^0.11.1
   ffmpeg_kit_flutter: 6.0.3
   path_provider: ^2.1.5
-  flutter_video_trimmer: ^3.0.3
 
   # other
   file_picker: ^8.1.1

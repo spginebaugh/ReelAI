@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:flutter_video_trimmer/flutter_video_trimmer.dart';
 import 'filter_option.dart';
 
 part 'video_edit_state.freezed.dart';
@@ -32,26 +31,29 @@ class VideoEditState with _$VideoEditState {
   const factory VideoEditState({
     required bool isProcessing,
     required bool isLoading,
-    String? processedVideoPath,
+    required bool isPlaying,
+    required EditingMode currentMode,
     required double startValue,
     required double endValue,
-    required bool isPlaying,
     required double brightness,
     required FilterOption selectedFilter,
-    required EditingMode currentMode,
     @FileConverter() File? tempVideoFile,
     String? currentPreviewPath,
+    String? processedVideoPath,
   }) = _VideoEditState;
 
   factory VideoEditState.initial() => VideoEditState(
         isProcessing: false,
-        isLoading: true,
-        startValue: 0.0,
-        endValue: 0.0,
+        isLoading: false,
         isPlaying: false,
+        currentMode: EditingMode.none,
+        startValue: 0,
+        endValue: 0,
         brightness: 1.0,
         selectedFilter: FilterOption.none,
-        currentMode: EditingMode.none,
+        tempVideoFile: null,
+        currentPreviewPath: null,
+        processedVideoPath: null,
       );
 
   factory VideoEditState.fromJson(Map<String, dynamic> json) =>

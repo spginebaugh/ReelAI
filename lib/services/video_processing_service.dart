@@ -2,21 +2,21 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_video_trimmer/flutter_video_trimmer.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
 import '../models/filter_option.dart';
 import 'ffmpeg_service.dart';
 
 class VideoProcessingService {
   final FFmpegService _ffmpegService;
-  final Trimmer trimmer;
+  final VideoPlayerController? previewController;
 
   VideoProcessingService({
     FFmpegService? ffmpegService,
-    Trimmer? trimmer,
-  })  : _ffmpegService = ffmpegService ?? FFmpegService(),
-        trimmer = trimmer ?? Trimmer();
+    this.previewController,
+  }) : _ffmpegService = ffmpegService ?? FFmpegService();
 
   /// Downloads a video from a URL and saves it to a temporary file
   Future<File> downloadVideo(String videoUrl) async {
@@ -26,7 +26,8 @@ class VideoProcessingService {
 
     final videoBytes =
         await NetworkAssetBundle(Uri.parse(videoUrl)).load(videoUrl);
-    await tempFile.writeAsBytes(videoBytes.buffer.asUint8List());
+    await tempFile.writeAsBytes(videoBytes.buffer
+        .asUint8List(videoBytes.offsetInBytes, videoBytes.lengthInBytes));
 
     return tempFile;
   }
@@ -46,9 +47,13 @@ class VideoProcessingService {
     );
   }
 
-  /// Loads video into trimmer
-  Future<void> loadVideoIntoTrimmer(File videoFile) async {
-    await trimmer.loadVideo(videoFile: videoFile);
+  /// Gets video duration in milliseconds
+  Future<double> getVideoDuration(File videoFile) async {
+    final controller = VideoPlayerController.file(videoFile);
+    await controller.initialize();
+    final duration = controller.value.duration.inMilliseconds.toDouble();
+    await controller.dispose();
+    return duration;
   }
 
   /// Applies filters to video
@@ -56,11 +61,8 @@ class VideoProcessingService {
     required File inputFile,
     required FilterOption filter,
     required double brightness,
+    required String outputPath,
   }) async {
-    final tempDir = await getTemporaryDirectory();
-    final outputPath =
-        '${tempDir.path}/preview_${DateTime.now().millisecondsSinceEpoch}.mp4';
-
     return _ffmpegService.applyFilters(
       inputFile: inputFile,
       filter: filter,
@@ -71,20 +73,31 @@ class VideoProcessingService {
 
   /// Trims video and returns the output path
   Future<String?> trimVideo({
+    required File inputFile,
     required double startValue,
     required double endValue,
   }) async {
-    Completer<String?> completer = Completer<String?>();
+    final tempDir = await getTemporaryDirectory();
+    final outputPath =
+        '${tempDir.path}/trimmed_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
-    await trimmer.saveTrimmedVideo(
-      startValue: startValue,
-      endValue: endValue,
-      onSave: (String? outputPath) {
-        completer.complete(outputPath);
-      },
-    );
+    // Convert milliseconds to seconds for FFmpeg
+    final startSeconds = startValue / 1000;
+    final endSeconds = endValue / 1000;
+    final duration = endSeconds - startSeconds;
 
-    return completer.future;
+    final command =
+        '-i "${inputFile.path}" -ss $startSeconds -t $duration -c copy "$outputPath"';
+
+    final session = await FFmpegKit.execute(command);
+    final returnCode = await session.getReturnCode();
+
+    if (!ReturnCode.isSuccess(returnCode)) {
+      final output = await session.getOutput();
+      throw Exception('Failed to trim video: ${output ?? 'Unknown error'}');
+    }
+
+    return outputPath;
   }
 
   /// Cleans up resources
@@ -94,8 +107,8 @@ class VideoProcessingService {
     }
   }
 
-  /// Disposes of the trimmer
+  /// Disposes of resources
   void dispose() {
-    trimmer.dispose();
+    previewController?.dispose();
   }
 }
