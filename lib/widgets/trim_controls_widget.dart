@@ -8,6 +8,8 @@ class TrimControlsWidget extends StatelessWidget {
   final Function(double) onChangeStart;
   final Function(double) onChangeEnd;
   final Function(bool) onChangePlaybackState;
+  final VoidCallback onApplyTrim;
+  final bool isProcessing;
 
   const TrimControlsWidget({
     super.key,
@@ -17,6 +19,8 @@ class TrimControlsWidget extends StatelessWidget {
     required this.onChangeStart,
     required this.onChangeEnd,
     required this.onChangePlaybackState,
+    required this.onApplyTrim,
+    this.isProcessing = false,
   });
 
   @override
@@ -40,12 +44,31 @@ class TrimControlsWidget extends StatelessWidget {
           onChangeEnd: onChangeEnd,
           onChangePlaybackState: onChangePlaybackState,
         ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16.0, bottom: 16.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: isProcessing ? null : onApplyTrim,
+              child: isProcessing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Apply Trim'),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _TrimSlider extends StatelessWidget {
+class _TrimSlider extends StatefulWidget {
   final VideoPlayerController controller;
   final double startValue;
   final double endValue;
@@ -63,8 +86,56 @@ class _TrimSlider extends StatelessWidget {
   });
 
   @override
+  State<_TrimSlider> createState() => _TrimSliderState();
+}
+
+class _TrimSliderState extends State<_TrimSlider> {
+  void _updateVideoPosition(double position) {
+    widget.controller.seekTo(Duration(milliseconds: position.toInt()));
+    if (widget.controller.value.isPlaying) {
+      widget.controller.pause();
+      widget.onChangePlaybackState(false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Add listener for playback position
+    widget.controller.addListener(_onVideoProgress);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onVideoProgress);
+    super.dispose();
+  }
+
+  void _onVideoProgress() {
+    if (!mounted) return;
+    final position = widget.controller.value.position.inMilliseconds.toDouble();
+    // If playback reaches end value, seek back to start value
+    if (position >= widget.endValue) {
+      widget.controller
+          .seekTo(Duration(milliseconds: widget.startValue.toInt()));
+      if (widget.controller.value.isPlaying) {
+        widget.controller.pause();
+        widget.onChangePlaybackState(false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final duration = controller.value.duration.inMilliseconds.toDouble();
+    final duration = widget.controller.value.duration.inMilliseconds.toDouble();
+
+    // Ensure endValue doesn't exceed duration
+    final validEndValue =
+        widget.endValue > duration ? duration : widget.endValue;
+    // Ensure startValue is less than endValue
+    final validStartValue = widget.startValue >= validEndValue
+        ? validEndValue - 1000
+        : widget.startValue;
 
     return Container(
       height: 50,
@@ -73,38 +144,77 @@ class _TrimSlider extends StatelessWidget {
         children: [
           IconButton(
             icon: Icon(
-              controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+              widget.controller.value.isPlaying
+                  ? Icons.pause
+                  : Icons.play_arrow,
             ),
             onPressed: () {
-              if (controller.value.isPlaying) {
-                controller.pause();
-                onChangePlaybackState(false);
+              if (widget.controller.value.isPlaying) {
+                widget.controller.pause();
+                widget.onChangePlaybackState(false);
               } else {
-                controller.play();
-                onChangePlaybackState(true);
+                // When playing, ensure we're within the trim range
+                final position =
+                    widget.controller.value.position.inMilliseconds.toDouble();
+                if (position < validStartValue || position >= validEndValue) {
+                  widget.controller
+                      .seekTo(Duration(milliseconds: validStartValue.toInt()));
+                }
+                widget.controller.play();
+                widget.onChangePlaybackState(true);
               }
             },
           ),
           Expanded(
-            child: RangeSlider(
-              values: RangeValues(startValue, endValue),
-              min: 0,
-              max: duration,
-              onChanged: (RangeValues values) {
-                onChangeStart(values.start);
-                onChangeEnd(values.end);
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RangeSlider(
+                  values: RangeValues(validStartValue, validEndValue),
+                  min: 0,
+                  max: duration,
+                  divisions: 100,
+                  onChanged: (RangeValues values) {
+                    // Ensure we don't exceed the video duration
+                    final end = values.end > duration ? duration : values.end;
+                    final start =
+                        values.start >= end ? end - 1000 : values.start;
 
-                // Seek to the start position when adjusting the trim
-                controller.seekTo(Duration(milliseconds: values.start.toInt()));
-                if (controller.value.isPlaying) {
-                  controller.pause();
-                  onChangePlaybackState(false);
-                }
-              },
-              labels: RangeLabels(
-                '${(startValue / 1000).toStringAsFixed(1)}s',
-                '${(endValue / 1000).toStringAsFixed(1)}s',
-              ),
+                    // Update preview based on which handle was moved
+                    final oldStart = validStartValue;
+                    final oldEnd = validEndValue;
+
+                    if (start != oldStart) {
+                      _updateVideoPosition(start);
+                    } else if (end != oldEnd) {
+                      _updateVideoPosition(end);
+                    }
+
+                    widget.onChangeStart(start);
+                    widget.onChangeEnd(end);
+                  },
+                  labels: RangeLabels(
+                    '${(validStartValue / 1000).toStringAsFixed(1)}s',
+                    '${(validEndValue / 1000).toStringAsFixed(1)}s',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${(validStartValue / 1000).toStringAsFixed(1)}s',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        '${(validEndValue / 1000).toStringAsFixed(1)}s',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],

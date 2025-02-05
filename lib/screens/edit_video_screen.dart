@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:chewie/chewie.dart';
@@ -28,11 +29,53 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: [SystemUiOverlay.top],
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(videoEditControllerProvider.notifier)
           .initializeVideo(widget.video);
     });
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
+  }
+
+  void _showSpeedDialog() {
+    final speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Playback Speed'),
+        content: SizedBox(
+          width: double.minPositive,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: speeds.length,
+            itemBuilder: (context, index) {
+              final speed = speeds[index];
+              return ListTile(
+                dense: true,
+                title: Text('${speed}x'),
+                onTap: () {
+                  final editState = ref.read(videoEditControllerProvider).value;
+                  editState?.videoPlayerController?.setPlaybackSpeed(speed);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildEditingControls(VideoEditState editState) {
@@ -51,6 +94,9 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
           onChangePlaybackState: (value) => ref
               .read(videoEditControllerProvider.notifier)
               .updatePlaybackState(value),
+          onApplyTrim: () =>
+              ref.read(videoEditControllerProvider.notifier).processVideo(),
+          isProcessing: editState.isProcessing,
         );
 
       case EditingMode.filter:
@@ -108,11 +154,127 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
               )
             else if (editState.chewieController != null) ...[
               Expanded(
-                child: Center(
-                  child: Container(
-                    color: Colors.black,
-                    child: Chewie(controller: editState.chewieController!),
-                  ),
+                child: Row(
+                  children: [
+                    // Video section
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          color: Colors.black,
+                          child:
+                              Chewie(controller: editState.chewieController!),
+                        ),
+                      ),
+                    ),
+                    // Right side tools
+                    Container(
+                      width: 56,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(-2, 0),
+                          ),
+                        ],
+                      ),
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Column(
+                            children: [
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  Icons.close,
+                                  color: editState.currentMode ==
+                                          EditingMode.none
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                onPressed: () => ref
+                                    .read(videoEditControllerProvider.notifier)
+                                    .setMode(EditingMode.none),
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  Icons.content_cut,
+                                  color: editState.currentMode ==
+                                          EditingMode.trim
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                onPressed: () => ref
+                                    .read(videoEditControllerProvider.notifier)
+                                    .setMode(EditingMode.trim),
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  Icons.filter,
+                                  color: editState.currentMode ==
+                                          EditingMode.filter
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                onPressed: () => ref
+                                    .read(videoEditControllerProvider.notifier)
+                                    .setMode(EditingMode.filter),
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  Icons.brightness_6,
+                                  color: editState.currentMode ==
+                                          EditingMode.brightness
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                onPressed: () => ref
+                                    .read(videoEditControllerProvider.notifier)
+                                    .setMode(EditingMode.brightness),
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: Icon(
+                                  Icons.edit_note,
+                                  color: editState.currentMode ==
+                                          EditingMode.metadata
+                                      ? Theme.of(context).colorScheme.primary
+                                      : null,
+                                ),
+                                onPressed: () {
+                                  context.pushNamed(
+                                    RouteNames.editVideoMetadata,
+                                    pathParameters: {'id': widget.video.id},
+                                    extra: widget.video,
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                icon: const Icon(Icons.speed),
+                                onPressed: _showSpeedDialog,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ] else
@@ -143,85 +305,6 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                 padding: EdgeInsets.all(16.0),
                 child: Center(child: CircularProgressIndicator()),
               ),
-            SafeArea(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: editState.currentMode == EditingMode.none
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      onPressed: () => ref
-                          .read(videoEditControllerProvider.notifier)
-                          .setMode(EditingMode.none),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.content_cut,
-                        color: editState.currentMode == EditingMode.trim
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      onPressed: () => ref
-                          .read(videoEditControllerProvider.notifier)
-                          .setMode(EditingMode.trim),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.filter,
-                        color: editState.currentMode == EditingMode.filter
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      onPressed: () => ref
-                          .read(videoEditControllerProvider.notifier)
-                          .setMode(EditingMode.filter),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.brightness_6,
-                        color: editState.currentMode == EditingMode.brightness
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      onPressed: () => ref
-                          .read(videoEditControllerProvider.notifier)
-                          .setMode(EditingMode.brightness),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.edit_note,
-                        color: editState.currentMode == EditingMode.metadata
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      onPressed: () {
-                        context.pushNamed(
-                          RouteNames.editVideoMetadata,
-                          pathParameters: {'id': widget.video.id},
-                          extra: widget.video,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),

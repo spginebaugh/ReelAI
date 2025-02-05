@@ -120,6 +120,10 @@ class VideoEditController extends _$VideoEditController {
     state = AsyncValue.data(currentState.copyWith(isProcessing: true));
 
     try {
+      // Dispose of existing controllers
+      currentState.chewieController?.dispose();
+      currentState.videoPlayerController?.dispose();
+
       final outputPath = await _videoService.trimVideo(
         inputFile: currentState.tempVideoFile!,
         startValue: currentState.startValue,
@@ -127,10 +131,26 @@ class VideoEditController extends _$VideoEditController {
       );
 
       if (outputPath != null) {
+        // Initialize new controllers with the trimmed video
+        final trimmedFile = File(outputPath);
+        final videoPlayerController = VideoPlayerController.file(trimmedFile);
+        await videoPlayerController.initialize();
+        final chewieController =
+            await _videoService.initializePlayer(trimmedFile);
+        final duration = await _videoService.getVideoDuration(trimmedFile);
+
+        // Clean up the old temp file
+        await _videoService.cleanup([currentState.tempVideoFile?.path]);
+
         state = AsyncValue.data(currentState.copyWith(
           processedVideoPath: outputPath,
           isProcessing: false,
-          tempVideoFile: File(outputPath),
+          tempVideoFile: trimmedFile,
+          videoPlayerController: videoPlayerController,
+          chewieController: chewieController,
+          startValue: 0,
+          endValue: duration,
+          currentMode: EditingMode.none,
         ));
       }
     } catch (e, st) {

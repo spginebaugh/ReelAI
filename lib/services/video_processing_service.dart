@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:developer' as dev;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
@@ -44,6 +45,9 @@ class VideoProcessingService {
       deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
       aspectRatio: videoController.value.aspectRatio,
       allowedScreenSleep: false,
+      showControls: true,
+      allowFullScreen: false,
+      showOptions: false,
     );
   }
 
@@ -86,18 +90,64 @@ class VideoProcessingService {
     final endSeconds = endValue / 1000;
     final duration = endSeconds - startSeconds;
 
-    final command =
-        '-i "${inputFile.path}" -ss $startSeconds -t $duration -c copy "$outputPath"';
+    dev.log('Starting video trim:');
+    dev.log('Input file exists: ${await inputFile.exists()}');
+    dev.log('Input file path: ${inputFile.path}');
+    dev.log('Start time: $startSeconds seconds');
+    dev.log('Duration: $duration seconds');
+    dev.log('Output path: $outputPath');
 
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
+    try {
+      // Simplest possible command for trimming
+      final command =
+          '-i "${inputFile.path}" -ss $startSeconds -t $duration -c:v copy -c:a copy "$outputPath"';
+      dev.log('Executing FFmpeg command: $command');
 
-    if (!ReturnCode.isSuccess(returnCode)) {
-      final output = await session.getOutput();
-      throw Exception('Failed to trim video: ${output ?? 'Unknown error'}');
+      final session = await FFmpegKit.execute(command);
+      final returnCode = await session.getReturnCode();
+      final logs = await session.getOutput() ?? 'No output';
+      final failStackTrace = await session.getFailStackTrace();
+
+      dev.log('FFmpeg return code: ${returnCode?.getValue() ?? "null"}');
+      dev.log('FFmpeg logs: $logs');
+      if (failStackTrace != null) {
+        dev.log('FFmpeg failure stack trace: $failStackTrace');
+      }
+
+      if (!ReturnCode.isSuccess(returnCode)) {
+        throw Exception('FFmpeg process failed with logs: $logs');
+      }
+
+      // Verify the output file exists and has a non-zero size
+      final outputFile = File(outputPath);
+      if (!await outputFile.exists()) {
+        throw Exception('Output file was not created');
+      }
+
+      final fileSize = await outputFile.length();
+      if (fileSize == 0) {
+        throw Exception('Output file was created but is empty');
+      }
+
+      dev.log(
+          'Video trim completed successfully. Output file size: $fileSize bytes');
+      return outputPath;
+    } catch (e, stackTrace) {
+      dev.log('Error during video trim: $e');
+      dev.log('Stack trace: $stackTrace');
+
+      // Clean up failed output file if it exists
+      try {
+        final outputFile = File(outputPath);
+        if (await outputFile.exists()) {
+          await outputFile.delete();
+        }
+      } catch (cleanupError) {
+        dev.log('Error cleaning up failed output file: $cleanupError');
+      }
+
+      rethrow;
     }
-
-    return outputPath;
   }
 
   /// Cleans up resources
