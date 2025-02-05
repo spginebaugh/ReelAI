@@ -37,18 +37,7 @@ class VideoCard extends StatelessWidget {
         onTap: () => context.pushNamed(
           RouteNames.video,
           pathParameters: {'id': video.id},
-          extra: video.videoUrl,
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.edit,
-            color: Theme.of(context).primaryColor,
-          ),
-          onPressed: () => context.pushNamed(
-            RouteNames.editVideo,
-            pathParameters: {'id': video.id},
-            extra: video,
-          ),
+          extra: video,
         ),
       ),
     );

@@ -1,8 +1,19 @@
 import 'dart:io';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/video.dart';
 import 'firestore_service.dart';
 import 'storage_service.dart';
 import 'package:uuid/uuid.dart';
+
+part 'video_service.g.dart';
+
+@riverpod
+VideoService videoService(VideoServiceRef ref) {
+  return VideoService(
+    firestoreService: ref.watch(firestoreServiceProvider),
+    storageService: ref.watch(storageServiceProvider),
+  );
+}
 
 class VideoService {
   final FirestoreService _firestoreService;
@@ -101,5 +112,20 @@ class VideoService {
 
   Future<void> incrementComments(String videoId) {
     return _firestoreService.incrementVideoComments(videoId);
+  }
+
+  Future<void> updateVideoMetadata({
+    required String videoId,
+    required String title,
+    required String description,
+  }) async {
+    await _firestoreService.updateVideo(
+      videoId,
+      {
+        'title': title,
+        'description': description,
+        'updatedAt': DateTime.now(),
+      },
+    );
   }
 }

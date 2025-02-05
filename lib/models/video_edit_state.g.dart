@@ -10,17 +10,22 @@ _$VideoEditStateImpl _$$VideoEditStateImplFromJson(Map<String, dynamic> json) =>
     _$VideoEditStateImpl(
       isProcessing: json['isProcessing'] as bool,
       isLoading: json['isLoading'] as bool,
-      processedVideoPath: json['processedVideoPath'] as String?,
+      isPlaying: json['isPlaying'] as bool,
+      isInitialized: json['isInitialized'] as bool,
+      currentMode: $enumDecode(_$EditingModeEnumMap, json['currentMode']),
       startValue: (json['startValue'] as num).toDouble(),
       endValue: (json['endValue'] as num).toDouble(),
-      isPlaying: json['isPlaying'] as bool,
       brightness: (json['brightness'] as num).toDouble(),
       selectedFilter:
           FilterOption.fromJson(json['selectedFilter'] as Map<String, dynamic>),
-      currentMode: $enumDecode(_$EditingModeEnumMap, json['currentMode']),
       tempVideoFile:
           const FileConverter().fromJson(json['tempVideoFile'] as String?),
       currentPreviewPath: json['currentPreviewPath'] as String?,
+      processedVideoPath: json['processedVideoPath'] as String?,
+      videoPlayerController: const VideoPlayerControllerConverter()
+          .fromJson(json['videoPlayerController'] as String?),
+      chewieController: const ChewieControllerConverter()
+          .fromJson(json['chewieController'] as String?),
     );
 
 Map<String, dynamic> _$$VideoEditStateImplToJson(
@@ -28,15 +33,20 @@ Map<String, dynamic> _$$VideoEditStateImplToJson(
     <String, dynamic>{
       'isProcessing': instance.isProcessing,
       'isLoading': instance.isLoading,
-      'processedVideoPath': instance.processedVideoPath,
+      'isPlaying': instance.isPlaying,
+      'isInitialized': instance.isInitialized,
+      'currentMode': _$EditingModeEnumMap[instance.currentMode]!,
       'startValue': instance.startValue,
       'endValue': instance.endValue,
-      'isPlaying': instance.isPlaying,
       'brightness': instance.brightness,
       'selectedFilter': instance.selectedFilter,
-      'currentMode': _$EditingModeEnumMap[instance.currentMode]!,
       'tempVideoFile': const FileConverter().toJson(instance.tempVideoFile),
       'currentPreviewPath': instance.currentPreviewPath,
+      'processedVideoPath': instance.processedVideoPath,
+      'videoPlayerController': const VideoPlayerControllerConverter()
+          .toJson(instance.videoPlayerController),
+      'chewieController':
+          const ChewieControllerConverter().toJson(instance.chewieController),
     };
 
 const _$EditingModeEnumMap = {
@@ -44,4 +54,5 @@ const _$EditingModeEnumMap = {
   EditingMode.trim: 'trim',
   EditingMode.filter: 'filter',
   EditingMode.brightness: 'brightness',
+  EditingMode.metadata: 'metadata',
 };

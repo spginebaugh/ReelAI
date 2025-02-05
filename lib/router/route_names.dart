@@ -10,8 +10,7 @@ class RouteNames {
   static const String home = 'home';
   static const String camera = 'camera';
   static const String myVideos = 'my-videos';
-  static const String upload = 'upload';
   static const String settings = 'settings';
   static const String video = 'video';
-  static const String editVideo = 'edit-video';
+  static const String editVideoMetadata = 'edit-video-metadata';
 }

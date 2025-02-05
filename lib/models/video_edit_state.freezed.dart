@@ -22,16 +22,22 @@ VideoEditState _$VideoEditStateFromJson(Map<String, dynamic> json) {
 mixin _$VideoEditState {
   bool get isProcessing => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
-  String? get processedVideoPath => throw _privateConstructorUsedError;
+  bool get isPlaying => throw _privateConstructorUsedError;
+  bool get isInitialized => throw _privateConstructorUsedError;
+  EditingMode get currentMode => throw _privateConstructorUsedError;
   double get startValue => throw _privateConstructorUsedError;
   double get endValue => throw _privateConstructorUsedError;
-  bool get isPlaying => throw _privateConstructorUsedError;
   double get brightness => throw _privateConstructorUsedError;
   FilterOption get selectedFilter => throw _privateConstructorUsedError;
-  EditingMode get currentMode => throw _privateConstructorUsedError;
   @FileConverter()
   File? get tempVideoFile => throw _privateConstructorUsedError;
   String? get currentPreviewPath => throw _privateConstructorUsedError;
+  String? get processedVideoPath => throw _privateConstructorUsedError;
+  @VideoPlayerControllerConverter()
+  VideoPlayerController? get videoPlayerController =>
+      throw _privateConstructorUsedError;
+  @ChewieControllerConverter()
+  ChewieController? get chewieController => throw _privateConstructorUsedError;
 
   /// Serializes this VideoEditState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -52,15 +58,19 @@ abstract class $VideoEditStateCopyWith<$Res> {
   $Res call(
       {bool isProcessing,
       bool isLoading,
-      String? processedVideoPath,
+      bool isPlaying,
+      bool isInitialized,
+      EditingMode currentMode,
       double startValue,
       double endValue,
-      bool isPlaying,
       double brightness,
       FilterOption selectedFilter,
-      EditingMode currentMode,
       @FileConverter() File? tempVideoFile,
-      String? currentPreviewPath});
+      String? currentPreviewPath,
+      String? processedVideoPath,
+      @VideoPlayerControllerConverter()
+      VideoPlayerController? videoPlayerController,
+      @ChewieControllerConverter() ChewieController? chewieController});
 
   $FilterOptionCopyWith<$Res> get selectedFilter;
 }
@@ -82,15 +92,18 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
   $Res call({
     Object? isProcessing = null,
     Object? isLoading = null,
-    Object? processedVideoPath = freezed,
+    Object? isPlaying = null,
+    Object? isInitialized = null,
+    Object? currentMode = null,
     Object? startValue = null,
     Object? endValue = null,
-    Object? isPlaying = null,
     Object? brightness = null,
     Object? selectedFilter = null,
-    Object? currentMode = null,
     Object? tempVideoFile = freezed,
     Object? currentPreviewPath = freezed,
+    Object? processedVideoPath = freezed,
+    Object? videoPlayerController = freezed,
+    Object? chewieController = freezed,
   }) {
     return _then(_value.copyWith(
       isProcessing: null == isProcessing
@@ -101,10 +114,18 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      processedVideoPath: freezed == processedVideoPath
-          ? _value.processedVideoPath
-          : processedVideoPath // ignore: cast_nullable_to_non_nullable
-              as String?,
+      isPlaying: null == isPlaying
+          ? _value.isPlaying
+          : isPlaying // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isInitialized: null == isInitialized
+          ? _value.isInitialized
+          : isInitialized // ignore: cast_nullable_to_non_nullable
+              as bool,
+      currentMode: null == currentMode
+          ? _value.currentMode
+          : currentMode // ignore: cast_nullable_to_non_nullable
+              as EditingMode,
       startValue: null == startValue
           ? _value.startValue
           : startValue // ignore: cast_nullable_to_non_nullable
@@ -113,10 +134,6 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
           ? _value.endValue
           : endValue // ignore: cast_nullable_to_non_nullable
               as double,
-      isPlaying: null == isPlaying
-          ? _value.isPlaying
-          : isPlaying // ignore: cast_nullable_to_non_nullable
-              as bool,
       brightness: null == brightness
           ? _value.brightness
           : brightness // ignore: cast_nullable_to_non_nullable
@@ -125,10 +142,6 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
           ? _value.selectedFilter
           : selectedFilter // ignore: cast_nullable_to_non_nullable
               as FilterOption,
-      currentMode: null == currentMode
-          ? _value.currentMode
-          : currentMode // ignore: cast_nullable_to_non_nullable
-              as EditingMode,
       tempVideoFile: freezed == tempVideoFile
           ? _value.tempVideoFile
           : tempVideoFile // ignore: cast_nullable_to_non_nullable
@@ -137,6 +150,18 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
           ? _value.currentPreviewPath
           : currentPreviewPath // ignore: cast_nullable_to_non_nullable
               as String?,
+      processedVideoPath: freezed == processedVideoPath
+          ? _value.processedVideoPath
+          : processedVideoPath // ignore: cast_nullable_to_non_nullable
+              as String?,
+      videoPlayerController: freezed == videoPlayerController
+          ? _value.videoPlayerController
+          : videoPlayerController // ignore: cast_nullable_to_non_nullable
+              as VideoPlayerController?,
+      chewieController: freezed == chewieController
+          ? _value.chewieController
+          : chewieController // ignore: cast_nullable_to_non_nullable
+              as ChewieController?,
     ) as $Val);
   }
 
@@ -162,15 +187,19 @@ abstract class _$$VideoEditStateImplCopyWith<$Res>
   $Res call(
       {bool isProcessing,
       bool isLoading,
-      String? processedVideoPath,
+      bool isPlaying,
+      bool isInitialized,
+      EditingMode currentMode,
       double startValue,
       double endValue,
-      bool isPlaying,
       double brightness,
       FilterOption selectedFilter,
-      EditingMode currentMode,
       @FileConverter() File? tempVideoFile,
-      String? currentPreviewPath});
+      String? currentPreviewPath,
+      String? processedVideoPath,
+      @VideoPlayerControllerConverter()
+      VideoPlayerController? videoPlayerController,
+      @ChewieControllerConverter() ChewieController? chewieController});
 
   @override
   $FilterOptionCopyWith<$Res> get selectedFilter;
@@ -191,15 +220,18 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
   $Res call({
     Object? isProcessing = null,
     Object? isLoading = null,
-    Object? processedVideoPath = freezed,
+    Object? isPlaying = null,
+    Object? isInitialized = null,
+    Object? currentMode = null,
     Object? startValue = null,
     Object? endValue = null,
-    Object? isPlaying = null,
     Object? brightness = null,
     Object? selectedFilter = null,
-    Object? currentMode = null,
     Object? tempVideoFile = freezed,
     Object? currentPreviewPath = freezed,
+    Object? processedVideoPath = freezed,
+    Object? videoPlayerController = freezed,
+    Object? chewieController = freezed,
   }) {
     return _then(_$VideoEditStateImpl(
       isProcessing: null == isProcessing
@@ -210,10 +242,18 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
-      processedVideoPath: freezed == processedVideoPath
-          ? _value.processedVideoPath
-          : processedVideoPath // ignore: cast_nullable_to_non_nullable
-              as String?,
+      isPlaying: null == isPlaying
+          ? _value.isPlaying
+          : isPlaying // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isInitialized: null == isInitialized
+          ? _value.isInitialized
+          : isInitialized // ignore: cast_nullable_to_non_nullable
+              as bool,
+      currentMode: null == currentMode
+          ? _value.currentMode
+          : currentMode // ignore: cast_nullable_to_non_nullable
+              as EditingMode,
       startValue: null == startValue
           ? _value.startValue
           : startValue // ignore: cast_nullable_to_non_nullable
@@ -222,10 +262,6 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
           ? _value.endValue
           : endValue // ignore: cast_nullable_to_non_nullable
               as double,
-      isPlaying: null == isPlaying
-          ? _value.isPlaying
-          : isPlaying // ignore: cast_nullable_to_non_nullable
-              as bool,
       brightness: null == brightness
           ? _value.brightness
           : brightness // ignore: cast_nullable_to_non_nullable
@@ -234,10 +270,6 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
           ? _value.selectedFilter
           : selectedFilter // ignore: cast_nullable_to_non_nullable
               as FilterOption,
-      currentMode: null == currentMode
-          ? _value.currentMode
-          : currentMode // ignore: cast_nullable_to_non_nullable
-              as EditingMode,
       tempVideoFile: freezed == tempVideoFile
           ? _value.tempVideoFile
           : tempVideoFile // ignore: cast_nullable_to_non_nullable
@@ -246,6 +278,18 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
           ? _value.currentPreviewPath
           : currentPreviewPath // ignore: cast_nullable_to_non_nullable
               as String?,
+      processedVideoPath: freezed == processedVideoPath
+          ? _value.processedVideoPath
+          : processedVideoPath // ignore: cast_nullable_to_non_nullable
+              as String?,
+      videoPlayerController: freezed == videoPlayerController
+          ? _value.videoPlayerController
+          : videoPlayerController // ignore: cast_nullable_to_non_nullable
+              as VideoPlayerController?,
+      chewieController: freezed == chewieController
+          ? _value.chewieController
+          : chewieController // ignore: cast_nullable_to_non_nullable
+              as ChewieController?,
     ));
   }
 }
@@ -256,15 +300,18 @@ class _$VideoEditStateImpl implements _VideoEditState {
   const _$VideoEditStateImpl(
       {required this.isProcessing,
       required this.isLoading,
-      this.processedVideoPath,
+      required this.isPlaying,
+      required this.isInitialized,
+      required this.currentMode,
       required this.startValue,
       required this.endValue,
-      required this.isPlaying,
       required this.brightness,
       required this.selectedFilter,
-      required this.currentMode,
       @FileConverter() this.tempVideoFile,
-      this.currentPreviewPath});
+      this.currentPreviewPath,
+      this.processedVideoPath,
+      @VideoPlayerControllerConverter() this.videoPlayerController,
+      @ChewieControllerConverter() this.chewieController});
 
   factory _$VideoEditStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$VideoEditStateImplFromJson(json);
@@ -274,28 +321,36 @@ class _$VideoEditStateImpl implements _VideoEditState {
   @override
   final bool isLoading;
   @override
-  final String? processedVideoPath;
+  final bool isPlaying;
+  @override
+  final bool isInitialized;
+  @override
+  final EditingMode currentMode;
   @override
   final double startValue;
   @override
   final double endValue;
   @override
-  final bool isPlaying;
-  @override
   final double brightness;
   @override
   final FilterOption selectedFilter;
-  @override
-  final EditingMode currentMode;
   @override
   @FileConverter()
   final File? tempVideoFile;
   @override
   final String? currentPreviewPath;
+  @override
+  final String? processedVideoPath;
+  @override
+  @VideoPlayerControllerConverter()
+  final VideoPlayerController? videoPlayerController;
+  @override
+  @ChewieControllerConverter()
+  final ChewieController? chewieController;
 
   @override
   String toString() {
-    return 'VideoEditState(isProcessing: $isProcessing, isLoading: $isLoading, processedVideoPath: $processedVideoPath, startValue: $startValue, endValue: $endValue, isPlaying: $isPlaying, brightness: $brightness, selectedFilter: $selectedFilter, currentMode: $currentMode, tempVideoFile: $tempVideoFile, currentPreviewPath: $currentPreviewPath)';
+    return 'VideoEditState(isProcessing: $isProcessing, isLoading: $isLoading, isPlaying: $isPlaying, isInitialized: $isInitialized, currentMode: $currentMode, startValue: $startValue, endValue: $endValue, brightness: $brightness, selectedFilter: $selectedFilter, tempVideoFile: $tempVideoFile, currentPreviewPath: $currentPreviewPath, processedVideoPath: $processedVideoPath, videoPlayerController: $videoPlayerController, chewieController: $chewieController)';
   }
 
   @override
@@ -307,24 +362,30 @@ class _$VideoEditStateImpl implements _VideoEditState {
                 other.isProcessing == isProcessing) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
-            (identical(other.processedVideoPath, processedVideoPath) ||
-                other.processedVideoPath == processedVideoPath) &&
+            (identical(other.isPlaying, isPlaying) ||
+                other.isPlaying == isPlaying) &&
+            (identical(other.isInitialized, isInitialized) ||
+                other.isInitialized == isInitialized) &&
+            (identical(other.currentMode, currentMode) ||
+                other.currentMode == currentMode) &&
             (identical(other.startValue, startValue) ||
                 other.startValue == startValue) &&
             (identical(other.endValue, endValue) ||
                 other.endValue == endValue) &&
-            (identical(other.isPlaying, isPlaying) ||
-                other.isPlaying == isPlaying) &&
             (identical(other.brightness, brightness) ||
                 other.brightness == brightness) &&
             (identical(other.selectedFilter, selectedFilter) ||
                 other.selectedFilter == selectedFilter) &&
-            (identical(other.currentMode, currentMode) ||
-                other.currentMode == currentMode) &&
             (identical(other.tempVideoFile, tempVideoFile) ||
                 other.tempVideoFile == tempVideoFile) &&
             (identical(other.currentPreviewPath, currentPreviewPath) ||
-                other.currentPreviewPath == currentPreviewPath));
+                other.currentPreviewPath == currentPreviewPath) &&
+            (identical(other.processedVideoPath, processedVideoPath) ||
+                other.processedVideoPath == processedVideoPath) &&
+            (identical(other.videoPlayerController, videoPlayerController) ||
+                other.videoPlayerController == videoPlayerController) &&
+            (identical(other.chewieController, chewieController) ||
+                other.chewieController == chewieController));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -333,15 +394,18 @@ class _$VideoEditStateImpl implements _VideoEditState {
       runtimeType,
       isProcessing,
       isLoading,
-      processedVideoPath,
+      isPlaying,
+      isInitialized,
+      currentMode,
       startValue,
       endValue,
-      isPlaying,
       brightness,
       selectedFilter,
-      currentMode,
       tempVideoFile,
-      currentPreviewPath);
+      currentPreviewPath,
+      processedVideoPath,
+      videoPlayerController,
+      chewieController);
 
   /// Create a copy of VideoEditState
   /// with the given fields replaced by the non-null parameter values.
@@ -364,15 +428,20 @@ abstract class _VideoEditState implements VideoEditState {
   const factory _VideoEditState(
       {required final bool isProcessing,
       required final bool isLoading,
-      final String? processedVideoPath,
+      required final bool isPlaying,
+      required final bool isInitialized,
+      required final EditingMode currentMode,
       required final double startValue,
       required final double endValue,
-      required final bool isPlaying,
       required final double brightness,
       required final FilterOption selectedFilter,
-      required final EditingMode currentMode,
       @FileConverter() final File? tempVideoFile,
-      final String? currentPreviewPath}) = _$VideoEditStateImpl;
+      final String? currentPreviewPath,
+      final String? processedVideoPath,
+      @VideoPlayerControllerConverter()
+      final VideoPlayerController? videoPlayerController,
+      @ChewieControllerConverter()
+      final ChewieController? chewieController}) = _$VideoEditStateImpl;
 
   factory _VideoEditState.fromJson(Map<String, dynamic> json) =
       _$VideoEditStateImpl.fromJson;
@@ -382,24 +451,32 @@ abstract class _VideoEditState implements VideoEditState {
   @override
   bool get isLoading;
   @override
-  String? get processedVideoPath;
+  bool get isPlaying;
+  @override
+  bool get isInitialized;
+  @override
+  EditingMode get currentMode;
   @override
   double get startValue;
   @override
   double get endValue;
   @override
-  bool get isPlaying;
-  @override
   double get brightness;
   @override
   FilterOption get selectedFilter;
-  @override
-  EditingMode get currentMode;
   @override
   @FileConverter()
   File? get tempVideoFile;
   @override
   String? get currentPreviewPath;
+  @override
+  String? get processedVideoPath;
+  @override
+  @VideoPlayerControllerConverter()
+  VideoPlayerController? get videoPlayerController;
+  @override
+  @ChewieControllerConverter()
+  ChewieController? get chewieController;
 
   /// Create a copy of VideoEditState
   /// with the given fields replaced by the non-null parameter values.
