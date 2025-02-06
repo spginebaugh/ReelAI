@@ -133,6 +133,10 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
       data: (editState) => Scaffold(
         appBar: AppBar(
           title: Text('Edit: ${widget.video.title}'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pushReplacementNamed(RouteNames.myVideos),
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.save),

@@ -79,45 +79,62 @@ class StorageService {
     required String userId,
     required String videoId,
   }) async {
-    // Delete video file
-    final videoRef = _storage
-        .ref()
-        .child('videos')
-        .child(userId)
-        .child('original')
-        .child(videoId);
-
-    // Delete thumbnail
-    final thumbnailRef = _storage
-        .ref()
-        .child('videos')
-        .child(userId)
-        .child('thumbnails')
-        .child(videoId);
+    final realErrors = <String>[];
 
     try {
-      await Future.wait([
-        _deleteDirectory(videoRef),
-        _deleteDirectory(thumbnailRef),
-      ]);
+      // Get reference to the video's root directory
+      final videoRef = _storage.ref().child('videos').child(userId);
+
+      // List of directories to check and delete
+      final directoriesToDelete = [
+        'original/$videoId',
+        'thumbnails/$videoId',
+      ];
+
+      // Delete each directory recursively
+      for (final dir in directoriesToDelete) {
+        final dirRef = videoRef.child(dir);
+        try {
+          // List all items in the directory
+          final ListResult result = await dirRef.listAll();
+
+          // Delete all files in parallel
+          await Future.wait([
+            ...result.items.map((ref) => ref.delete()),
+            ...result.prefixes
+                .map((prefix) => _deleteDirectoryRecursive(prefix)),
+          ]);
+        } catch (e) {
+          if (e is FirebaseException && e.code == 'object-not-found') {
+            // Ignore if directory doesn't exist
+            continue;
+          }
+          realErrors.add('Failed to delete $dir: $e');
+        }
+      }
+
+      // Only throw if we had real errors (not "not found" errors)
+      if (realErrors.isNotEmpty) {
+        throw Exception(
+          'Failed to delete video content: ${realErrors.join(', ')}',
+        );
+      }
     } catch (e) {
-      // If files don't exist, that's okay
-      // rethrow other errors
       if (e is FirebaseException && e.code == 'object-not-found') {
+        // If the directory doesn't exist, that's fine
         return;
       }
-      rethrow;
+      throw Exception('Failed to delete video content: $e');
     }
   }
 
-  // Helper method to delete a directory and its contents
-  Future<void> _deleteDirectory(Reference ref) async {
+  // Helper method to recursively delete a directory
+  Future<void> _deleteDirectoryRecursive(Reference ref) async {
     try {
       final ListResult result = await ref.listAll();
-
       await Future.wait([
         ...result.items.map((item) => item.delete()),
-        ...result.prefixes.map((prefix) => _deleteDirectory(prefix)),
+        ...result.prefixes.map((prefix) => _deleteDirectoryRecursive(prefix)),
       ]);
     } catch (e) {
       if (e is FirebaseException && e.code == 'object-not-found') {

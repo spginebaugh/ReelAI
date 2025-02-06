@@ -4,6 +4,11 @@ import '../models/video.dart';
 import 'firestore_service.dart';
 import 'storage_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path/path.dart' as path;
+import 'ffmpeg_service.dart';
+import 'package:flutter/foundation.dart';
 
 part 'video_service.g.dart';
 
@@ -18,6 +23,8 @@ VideoService videoService(VideoServiceRef ref) {
 class VideoService {
   final FirestoreService _firestoreService;
   final StorageService _storageService;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FFmpegService _ffmpegService = FFmpegService();
 
   VideoService({
     required FirestoreService firestoreService,
@@ -50,46 +57,143 @@ class VideoService {
       throw Exception('Video file does not exist at path: ${videoFile.path}');
     }
 
-    final videoId = const Uuid().v4();
+    // Generate a Firestore document reference first to get its ID
+    final docRef = _firestoreService.generateVideoId();
+    final videoId = docRef.id;
+    String? videoUrl;
+    String? audioUrl;
 
-    // Upload video and get URL
-    final videoUrl = await _storageService.uploadVideo(
-      userId: userId,
-      videoId: videoId,
-      videoFile: videoFile,
-    );
+    try {
+      // Upload video and audio, get URLs
+      final uploadResult = await uploadVideoWithAudio(
+        videoFile.path,
+        userId,
+        videoId: videoId, // Pass the Firestore ID to use for storage
+      );
+      videoUrl = uploadResult.$1;
+      audioUrl = uploadResult.$2;
 
-    // Upload thumbnail if provided
-    String? thumbnailUrl;
-    if (thumbnailFile != null) {
-      if (thumbnailFile.existsSync()) {
+      // Upload thumbnail if provided
+      String? thumbnailUrl;
+      if (thumbnailFile != null && thumbnailFile.existsSync()) {
         thumbnailUrl = await _storageService.uploadThumbnail(
           userId: userId,
           videoId: videoId,
           thumbnailFile: thumbnailFile,
         );
       }
+
+      final now = DateTime.now();
+
+      // Create the video document with all required fields
+      final video = Video(
+        id: videoId,
+        uploaderId: userId,
+        title: title,
+        description: description,
+        privacy: privacy,
+        uploadTime: now,
+        videoUrl: videoUrl,
+        audioUrl: audioUrl,
+        thumbnailUrl: thumbnailUrl,
+        likesCount: 0,
+        commentsCount: 0,
+        isProcessing: false,
+        createdAt: now,
+        updatedAt: now,
+        isDeleted: false,
+      );
+
+      // Convert to a Map and explicitly set Timestamps for Firestore
+      final videoData = video.toJson();
+      videoData['createdAt'] = Timestamp.fromDate(now);
+      videoData['updatedAt'] = Timestamp.fromDate(now);
+      videoData['uploadTime'] = Timestamp.fromDate(now);
+
+      // Create the video document in Firestore using the same ID
+      await _firestoreService.createVideo(videoData, docRef);
+
+      return videoId;
+    } catch (e) {
+      // Clean up any uploaded files in case of error
+      if (videoUrl != null || audioUrl != null) {
+        try {
+          await _storageService.deleteVideoContent(
+            userId: userId,
+            videoId: videoId,
+          );
+        } catch (cleanupError) {
+          debugPrint('Error cleaning up failed upload: $cleanupError');
+        }
+      }
+      rethrow;
     }
+  }
 
-    // Create the video document with all required fields
-    final video = Video(
-      id: '', // Will be set by Firestore
-      uploaderId: userId,
-      title: title,
-      description: description,
-      privacy: privacy,
-      uploadTime: DateTime.now(),
-      videoUrl: videoUrl,
-      thumbnailUrl: thumbnailUrl,
-      likesCount: 0,
-      commentsCount: 0,
-      isProcessing: false,
-    );
+  Future<(String videoUrl, String audioUrl)> uploadVideoWithAudio(
+    String videoPath,
+    String userId, {
+    required String videoId,
+  }) async {
+    String? audioPath;
+    String? videoFileName;
+    String? audioFileName;
 
-    // Create the video document in Firestore
-    final createdVideoId = await _firestoreService.createVideo(video);
+    try {
+      // Extract audio first
+      audioPath = await _ffmpegService.extractAudio(videoPath);
+      if (audioPath == null) {
+        throw Exception('Failed to extract audio from video');
+      }
 
-    return createdVideoId;
+      // Use the provided videoId for storage paths
+      videoFileName = 'videos/$userId/original/$videoId/video.mp4';
+      audioFileName = 'videos/$userId/original/$videoId/audio.wav';
+
+      // Upload both files concurrently
+      final videoUpload = _storage.ref(videoFileName).putFile(File(videoPath));
+      final audioUpload = _storage.ref(audioFileName).putFile(File(audioPath));
+
+      // Wait for both uploads to complete
+      final results = await Future.wait([
+        videoUpload,
+        audioUpload,
+      ]);
+
+      // Get download URLs
+      final videoUrl = await results[0].ref.getDownloadURL();
+      final audioUrl = await results[1].ref.getDownloadURL();
+
+      // Clean up temporary audio file
+      await File(audioPath).delete();
+
+      return (videoUrl, audioUrl);
+    } catch (e) {
+      // Clean up any uploaded files
+      if (videoFileName != null) {
+        try {
+          await _storage.ref(videoFileName).delete();
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      }
+      if (audioFileName != null) {
+        try {
+          await _storage.ref(audioFileName).delete();
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      }
+      // Clean up temporary audio file
+      if (audioPath != null) {
+        try {
+          await File(audioPath).delete();
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      }
+      throw Exception('Failed to upload video and audio: $e');
+    }
   }
 
   Future<void> deleteVideo({

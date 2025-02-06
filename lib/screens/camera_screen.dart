@@ -103,8 +103,8 @@ class CameraScreen extends HookConsumerWidget {
 
       if (!context.mounted || currentUser.value == null) return;
 
-      // Navigate immediately after stopping recording
-      final shouldContinue = await Navigator.push<bool>(
+      // Navigate to uploading screen and let it handle further navigation
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => UploadingScreen(
@@ -113,10 +113,7 @@ class CameraScreen extends HookConsumerWidget {
           ),
         ),
       );
-
-      if (shouldContinue == true && context.mounted) {
-        Navigator.pop(context);
-      }
+      // No pop here - let the uploading screen handle navigation
     }
 
     if (!isInitialized.value) {

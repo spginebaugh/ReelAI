@@ -24,14 +24,7 @@ class HomeScreen extends ConsumerWidget {
         title: 'Take Video',
         icon: Icons.videocam,
         onTap: () async {
-          final videoPath = await context.pushNamed<String>(
-            RouteNames.camera,
-          );
-
-          if (videoPath != null && context.mounted) {
-            // TODO: Handle the recorded video path
-            debugPrint('Video recorded at: $videoPath');
-          }
+          await context.pushNamed(RouteNames.camera);
         },
       ),
       _MenuItem(
@@ -112,10 +105,10 @@ class HomeScreen extends ConsumerWidget {
               Navigator.of(context).pop();
             }
 
-            // Navigate to metadata editing screen
+            // Navigate to video editing screen
             if (context.mounted && video != null) {
               context.pushNamed(
-                RouteNames.editVideoMetadata,
+                RouteNames.video,
                 pathParameters: {'id': video.id},
                 extra: video,
               );

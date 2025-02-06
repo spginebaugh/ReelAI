@@ -28,16 +28,15 @@ class FirestoreService {
   }
 
   // Video Operations
-  Future<String> createVideo(Video video) async {
-    // Create a new document reference with auto-generated ID
-    final docRef = _firestore.collection('videos').doc();
+  DocumentReference generateVideoId() {
+    return _firestore.collection('videos').doc();
+  }
 
-    // Create a new video object with the generated ID
-    final videoWithId = video.copyWith(id: docRef.id);
-
-    // Set the document data with the ID included
-    await docRef.set(videoWithId.toJson());
-
+  Future<String> createVideo(Map<String, dynamic> videoData,
+      [DocumentReference? docRef]) async {
+    docRef ??= _firestore.collection('videos').doc();
+    videoData['id'] = docRef.id;
+    await docRef.set(videoData);
     return docRef.id;
   }
 
@@ -60,23 +59,22 @@ class FirestoreService {
     return _firestore
         .collection('videos')
         .where('uploaderId', isEqualTo: userId)
-        .orderBy('uploadTime', descending: true)
+        .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Video.fromJson(doc.data()..['id'] = doc.id))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Video.fromJson(doc.data())).toList());
   }
 
   Stream<List<Video>> getPublicVideos() {
     return _firestore
         .collection('videos')
         .where('privacy', isEqualTo: 'public')
-        .orderBy('uploadTime', descending: true)
-        .limit(50)
+        .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Video.fromJson(doc.data()..['id'] = doc.id))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Video.fromJson(doc.data())).toList());
   }
 
   // Analytics Updates

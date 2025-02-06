@@ -12,6 +12,7 @@ _$VideoImpl _$$VideoImplFromJson(Map<String, dynamic> json) => _$VideoImpl(
       title: json['title'] as String,
       description: json['description'] as String?,
       videoUrl: json['videoUrl'] as String,
+      audioUrl: json['audioUrl'] as String,
       thumbnailUrl: json['thumbnailUrl'] as String?,
       uploadTime:
           const TimestampConverter().fromJson(json['uploadTime'] as Timestamp),
@@ -19,6 +20,11 @@ _$VideoImpl _$$VideoImplFromJson(Map<String, dynamic> json) => _$VideoImpl(
       likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
       isProcessing: json['isProcessing'] as bool? ?? false,
+      createdAt:
+          const TimestampConverter().fromJson(json['createdAt'] as Timestamp),
+      updatedAt:
+          const TimestampConverter().fromJson(json['updatedAt'] as Timestamp),
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$VideoImplToJson(_$VideoImpl instance) =>
@@ -28,10 +34,14 @@ Map<String, dynamic> _$$VideoImplToJson(_$VideoImpl instance) =>
       'title': instance.title,
       'description': instance.description,
       'videoUrl': instance.videoUrl,
+      'audioUrl': instance.audioUrl,
       'thumbnailUrl': instance.thumbnailUrl,
       'uploadTime': const TimestampConverter().toJson(instance.uploadTime),
       'privacy': instance.privacy,
       'likesCount': instance.likesCount,
       'commentsCount': instance.commentsCount,
       'isProcessing': instance.isProcessing,
+      'createdAt': const TimestampConverter().toJson(instance.createdAt),
+      'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
+      'isDeleted': instance.isDeleted,
     };

@@ -25,6 +25,7 @@ mixin _$Video {
   String get title => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   String get videoUrl => throw _privateConstructorUsedError;
+  String get audioUrl => throw _privateConstructorUsedError;
   String? get thumbnailUrl => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get uploadTime => throw _privateConstructorUsedError;
@@ -32,6 +33,11 @@ mixin _$Video {
   int get likesCount => throw _privateConstructorUsedError;
   int get commentsCount => throw _privateConstructorUsedError;
   bool get isProcessing => throw _privateConstructorUsedError;
+  @TimestampConverter()
+  DateTime get createdAt => throw _privateConstructorUsedError;
+  @TimestampConverter()
+  DateTime get updatedAt => throw _privateConstructorUsedError;
+  bool get isDeleted => throw _privateConstructorUsedError;
 
   /// Serializes this Video to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -53,12 +59,16 @@ abstract class $VideoCopyWith<$Res> {
       String title,
       String? description,
       String videoUrl,
+      String audioUrl,
       String? thumbnailUrl,
       @TimestampConverter() DateTime uploadTime,
       String privacy,
       int likesCount,
       int commentsCount,
-      bool isProcessing});
+      bool isProcessing,
+      @TimestampConverter() DateTime createdAt,
+      @TimestampConverter() DateTime updatedAt,
+      bool isDeleted});
 }
 
 /// @nodoc
@@ -81,12 +91,16 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
     Object? title = null,
     Object? description = freezed,
     Object? videoUrl = null,
+    Object? audioUrl = null,
     Object? thumbnailUrl = freezed,
     Object? uploadTime = null,
     Object? privacy = null,
     Object? likesCount = null,
     Object? commentsCount = null,
     Object? isProcessing = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? isDeleted = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -109,6 +123,10 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
           ? _value.videoUrl
           : videoUrl // ignore: cast_nullable_to_non_nullable
               as String,
+      audioUrl: null == audioUrl
+          ? _value.audioUrl
+          : audioUrl // ignore: cast_nullable_to_non_nullable
+              as String,
       thumbnailUrl: freezed == thumbnailUrl
           ? _value.thumbnailUrl
           : thumbnailUrl // ignore: cast_nullable_to_non_nullable
@@ -133,6 +151,18 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
           ? _value.isProcessing
           : isProcessing // ignore: cast_nullable_to_non_nullable
               as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -150,12 +180,16 @@ abstract class _$$VideoImplCopyWith<$Res> implements $VideoCopyWith<$Res> {
       String title,
       String? description,
       String videoUrl,
+      String audioUrl,
       String? thumbnailUrl,
       @TimestampConverter() DateTime uploadTime,
       String privacy,
       int likesCount,
       int commentsCount,
-      bool isProcessing});
+      bool isProcessing,
+      @TimestampConverter() DateTime createdAt,
+      @TimestampConverter() DateTime updatedAt,
+      bool isDeleted});
 }
 
 /// @nodoc
@@ -176,12 +210,16 @@ class __$$VideoImplCopyWithImpl<$Res>
     Object? title = null,
     Object? description = freezed,
     Object? videoUrl = null,
+    Object? audioUrl = null,
     Object? thumbnailUrl = freezed,
     Object? uploadTime = null,
     Object? privacy = null,
     Object? likesCount = null,
     Object? commentsCount = null,
     Object? isProcessing = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
+    Object? isDeleted = null,
   }) {
     return _then(_$VideoImpl(
       id: null == id
@@ -204,6 +242,10 @@ class __$$VideoImplCopyWithImpl<$Res>
           ? _value.videoUrl
           : videoUrl // ignore: cast_nullable_to_non_nullable
               as String,
+      audioUrl: null == audioUrl
+          ? _value.audioUrl
+          : audioUrl // ignore: cast_nullable_to_non_nullable
+              as String,
       thumbnailUrl: freezed == thumbnailUrl
           ? _value.thumbnailUrl
           : thumbnailUrl // ignore: cast_nullable_to_non_nullable
@@ -228,12 +270,25 @@ class __$$VideoImplCopyWithImpl<$Res>
           ? _value.isProcessing
           : isProcessing // ignore: cast_nullable_to_non_nullable
               as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$VideoImpl extends _Video {
   const _$VideoImpl(
       {required this.id,
@@ -241,12 +296,16 @@ class _$VideoImpl extends _Video {
       required this.title,
       this.description,
       required this.videoUrl,
+      required this.audioUrl,
       this.thumbnailUrl,
       @TimestampConverter() required this.uploadTime,
       this.privacy = 'public',
       this.likesCount = 0,
       this.commentsCount = 0,
-      this.isProcessing = false})
+      this.isProcessing = false,
+      @TimestampConverter() required this.createdAt,
+      @TimestampConverter() required this.updatedAt,
+      this.isDeleted = false})
       : super._();
 
   factory _$VideoImpl.fromJson(Map<String, dynamic> json) =>
@@ -262,6 +321,8 @@ class _$VideoImpl extends _Video {
   final String? description;
   @override
   final String videoUrl;
+  @override
+  final String audioUrl;
   @override
   final String? thumbnailUrl;
   @override
@@ -279,10 +340,19 @@ class _$VideoImpl extends _Video {
   @override
   @JsonKey()
   final bool isProcessing;
+  @override
+  @TimestampConverter()
+  final DateTime createdAt;
+  @override
+  @TimestampConverter()
+  final DateTime updatedAt;
+  @override
+  @JsonKey()
+  final bool isDeleted;
 
   @override
   String toString() {
-    return 'Video(id: $id, uploaderId: $uploaderId, title: $title, description: $description, videoUrl: $videoUrl, thumbnailUrl: $thumbnailUrl, uploadTime: $uploadTime, privacy: $privacy, likesCount: $likesCount, commentsCount: $commentsCount, isProcessing: $isProcessing)';
+    return 'Video(id: $id, uploaderId: $uploaderId, title: $title, description: $description, videoUrl: $videoUrl, audioUrl: $audioUrl, thumbnailUrl: $thumbnailUrl, uploadTime: $uploadTime, privacy: $privacy, likesCount: $likesCount, commentsCount: $commentsCount, isProcessing: $isProcessing, createdAt: $createdAt, updatedAt: $updatedAt, isDeleted: $isDeleted)';
   }
 
   @override
@@ -298,6 +368,8 @@ class _$VideoImpl extends _Video {
                 other.description == description) &&
             (identical(other.videoUrl, videoUrl) ||
                 other.videoUrl == videoUrl) &&
+            (identical(other.audioUrl, audioUrl) ||
+                other.audioUrl == audioUrl) &&
             (identical(other.thumbnailUrl, thumbnailUrl) ||
                 other.thumbnailUrl == thumbnailUrl) &&
             (identical(other.uploadTime, uploadTime) ||
@@ -308,7 +380,13 @@ class _$VideoImpl extends _Video {
             (identical(other.commentsCount, commentsCount) ||
                 other.commentsCount == commentsCount) &&
             (identical(other.isProcessing, isProcessing) ||
-                other.isProcessing == isProcessing));
+                other.isProcessing == isProcessing) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.isDeleted, isDeleted) ||
+                other.isDeleted == isDeleted));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -320,12 +398,16 @@ class _$VideoImpl extends _Video {
       title,
       description,
       videoUrl,
+      audioUrl,
       thumbnailUrl,
       uploadTime,
       privacy,
       likesCount,
       commentsCount,
-      isProcessing);
+      isProcessing,
+      createdAt,
+      updatedAt,
+      isDeleted);
 
   /// Create a copy of Video
   /// with the given fields replaced by the non-null parameter values.
@@ -350,12 +432,16 @@ abstract class _Video extends Video {
       required final String title,
       final String? description,
       required final String videoUrl,
+      required final String audioUrl,
       final String? thumbnailUrl,
       @TimestampConverter() required final DateTime uploadTime,
       final String privacy,
       final int likesCount,
       final int commentsCount,
-      final bool isProcessing}) = _$VideoImpl;
+      final bool isProcessing,
+      @TimestampConverter() required final DateTime createdAt,
+      @TimestampConverter() required final DateTime updatedAt,
+      final bool isDeleted}) = _$VideoImpl;
   const _Video._() : super._();
 
   factory _Video.fromJson(Map<String, dynamic> json) = _$VideoImpl.fromJson;
@@ -371,6 +457,8 @@ abstract class _Video extends Video {
   @override
   String get videoUrl;
   @override
+  String get audioUrl;
+  @override
   String? get thumbnailUrl;
   @override
   @TimestampConverter()
@@ -383,6 +471,14 @@ abstract class _Video extends Video {
   int get commentsCount;
   @override
   bool get isProcessing;
+  @override
+  @TimestampConverter()
+  DateTime get createdAt;
+  @override
+  @TimestampConverter()
+  DateTime get updatedAt;
+  @override
+  bool get isDeleted;
 
   /// Create a copy of Video
   /// with the given fields replaced by the non-null parameter values.

@@ -51,9 +51,14 @@ service firebase.storage {
             ? isValidContentType(request.resource.contentType, [
                 'video/mp4',
                 'video/quicktime',
-                'video/x-msvideo'
+                'video/x-msvideo',
+                'audio/wav',  // Allow WAV audio files
+                'audio/x-wav'  // Alternative MIME type for WAV
               ]) 
-            && isWithinSizeLimit(500 * 1024 * 1024)  // 500MB for videos
+            && (
+              (fileName == 'video.mp4' && isWithinSizeLimit(500 * 1024 * 1024)) ||  // 500MB for videos
+              (fileName == 'audio.wav' && isWithinSizeLimit(50 * 1024 * 1024))    // 50MB for audio
+            )
             : type == "thumbnails" 
             && isValidContentType(request.resource.contentType, [
                 'image/jpeg',
