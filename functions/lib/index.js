@@ -45,6 +45,8 @@ const node_fetch_1 = __importDefault(require("node-fetch"));
 admin.initializeApp();
 // Define secrets
 const openaiApiKey = (0, params_1.defineSecret)("OPENAI_API_KEY");
+// Constants for storage paths
+const LANG = "english"; // Default language
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 // export const helloWorld = onRequest((request, response) => {
@@ -205,12 +207,16 @@ exports.generateSubtitles = (0, https_1.onCall)({
                 response_format: "verbose_json",
                 timestamp_granularities: ["word"],
             });
-            // Store the transcription in Firebase Storage
-            const subtitlesPath = `subtitles/${videoId}.json`;
+            // Store the transcription in Firebase Storage using new path structure
+            const subtitlesPath = `${videoData.uploaderId}/` +
+                `${videoId}/subtitles/subtitles_${LANG}.json`;
             const subtitlesFile = admin.storage().bucket().file(subtitlesPath);
             await subtitlesFile.save(JSON.stringify(transcription), {
                 contentType: "application/json",
-                metadata: { contentType: "application/json" },
+                metadata: {
+                    contentType: "application/json",
+                    language: LANG,
+                },
             });
             // Update video document with subtitles URL
             await videoDoc.ref.update({

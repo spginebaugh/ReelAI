@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../lib/utils/storage_paths.dart';
 
 Future<void> main() async {
   // Initialize Firebase
@@ -18,7 +19,7 @@ Future<void> main() async {
   for (final asset in defaultAssets.entries) {
     final file = File(asset.value);
     if (await file.exists()) {
-      final ref = storage.ref('public/assets/${asset.key}');
+      final ref = storage.ref(StoragePaths.publicAsset(asset.key));
       await ref.putFile(file);
       print('Uploaded ${asset.key}');
     } else {

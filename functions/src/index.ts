@@ -20,6 +20,9 @@ admin.initializeApp();
 // Define secrets
 const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
+// Constants for storage paths
+const LANG = "english"; // Default language
+
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
@@ -220,12 +223,16 @@ export const generateSubtitles = onCall(
           timestamp_granularities: ["word"],
         });
 
-        // Store the transcription in Firebase Storage
-        const subtitlesPath = `subtitles/${videoId}.json`;
+        // Store the transcription in Firebase Storage using new path structure
+        const subtitlesPath = `${videoData.uploaderId}/`+
+          `${videoId}/subtitles/subtitles_${LANG}.json`;
         const subtitlesFile = admin.storage().bucket().file(subtitlesPath);
         await subtitlesFile.save(JSON.stringify(transcription), {
           contentType: "application/json",
-          metadata: {contentType: "application/json"},
+          metadata: {
+            contentType: "application/json",
+            language: LANG,
+          },
         });
 
         // Update video document with subtitles URL

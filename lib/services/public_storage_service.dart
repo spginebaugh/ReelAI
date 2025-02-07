@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../utils/storage_paths.dart';
 
 part 'public_storage_service.g.dart';
 
@@ -13,9 +14,7 @@ class PublicStorageService {
 
   // Default Assets
   Future<String> getDefaultAsset(String assetName) async {
-    final assetRef =
-        _storage.ref().child('public').child('assets').child(assetName);
-
+    final assetRef = _storage.ref(StoragePaths.publicAsset(assetName));
     return await assetRef.getDownloadURL();
   }
 
@@ -27,7 +26,7 @@ class PublicStorageService {
     String? contentType,
   }) async {
     final assetRef =
-        _storage.ref().child('public').child(category).child(assetName);
+        _storage.ref(StoragePaths.publicCategoryAsset(category, assetName));
 
     final uploadTask = await assetRef.putFile(
       file,
@@ -48,7 +47,7 @@ class PublicStorageService {
     required String category,
   }) async {
     final assetRef =
-        _storage.ref().child('public').child(category).child(assetName);
+        _storage.ref(StoragePaths.publicCategoryAsset(category, assetName));
 
     try {
       await assetRef.delete();
@@ -62,7 +61,7 @@ class PublicStorageService {
 
   // Category Management
   Future<List<String>> listCategoryAssets(String category) async {
-    final categoryRef = _storage.ref().child('public').child(category);
+    final categoryRef = _storage.ref(StoragePaths.publicCategory(category));
 
     try {
       final result = await categoryRef.listAll();
@@ -78,7 +77,7 @@ class PublicStorageService {
   }
 
   Future<void> deleteCategory(String category) async {
-    final categoryRef = _storage.ref().child('public').child(category);
+    final categoryRef = _storage.ref(StoragePaths.publicCategory(category));
 
     try {
       final result = await categoryRef.listAll();
@@ -113,10 +112,6 @@ class PublicStorageService {
   // Common Public Assets
   Future<String> getDefaultProfilePicture() async {
     return getDefaultAsset('default_avatar.jpg');
-  }
-
-  Future<String> getDefaultBanner() async {
-    return getDefaultAsset('default_banner.jpg');
   }
 
   Future<String> getDefaultVideoThumbnail() async {

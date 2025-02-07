@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../utils/storage_paths.dart';
 
 part 'user_storage_service.g.dart';
 
@@ -15,15 +16,8 @@ class UserStorageService {
   Future<String> uploadProfilePicture({
     required String userId,
     required File imageFile,
-    String size = 'original', // original, thumbnail
   }) async {
-    final profileRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('profile')
-        .child('avatar')
-        .child('$size.jpg');
+    final profileRef = _storage.ref(StoragePaths.profilePicture(userId));
 
     final uploadTask = await profileRef.putFile(
       imageFile,
@@ -32,7 +26,6 @@ class UserStorageService {
         customMetadata: {
           'uploadedAt': DateTime.now().toIso8601String(),
           'userId': userId,
-          'size': size,
         },
       ),
     );
@@ -40,65 +33,11 @@ class UserStorageService {
     return uploadTask.ref.getDownloadURL();
   }
 
-  Future<void> deleteProfilePictures(String userId) async {
-    final profileRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('profile')
-        .child('avatar');
+  Future<void> deleteProfilePicture(String userId) async {
+    final profileRef = _storage.ref(StoragePaths.profilePicture(userId));
 
     try {
-      final ListResult result = await profileRef.listAll();
-      await Future.wait(result.items.map((item) => item.delete()));
-    } catch (e) {
-      if (e is FirebaseException && e.code == 'object-not-found') {
-        return;
-      }
-      rethrow;
-    }
-  }
-
-  // Banner Image Operations
-  Future<String> uploadBannerImage({
-    required String userId,
-    required File imageFile,
-    String size = 'original', // original, mobile
-  }) async {
-    final bannerRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('profile')
-        .child('banner')
-        .child('$size.jpg');
-
-    final uploadTask = await bannerRef.putFile(
-      imageFile,
-      SettableMetadata(
-        contentType: 'image/jpeg',
-        customMetadata: {
-          'uploadedAt': DateTime.now().toIso8601String(),
-          'userId': userId,
-          'size': size,
-        },
-      ),
-    );
-
-    return uploadTask.ref.getDownloadURL();
-  }
-
-  Future<void> deleteBannerImages(String userId) async {
-    final bannerRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('profile')
-        .child('banner');
-
-    try {
-      final ListResult result = await bannerRef.listAll();
-      await Future.wait(result.items.map((item) => item.delete()));
+      await profileRef.delete();
     } catch (e) {
       if (e is FirebaseException && e.code == 'object-not-found') {
         return;
@@ -109,7 +48,7 @@ class UserStorageService {
 
   // User Content Management
   Future<void> deleteAllUserContent(String userId) async {
-    final userRef = _storage.ref().child('users').child(userId);
+    final userRef = _storage.ref(StoragePaths.userDirectory(userId));
 
     try {
       await _deleteDirectoryRecursive(userRef);
@@ -142,14 +81,8 @@ class UserStorageService {
     return getDefaultAsset('default_avatar.jpg');
   }
 
-  Future<String> getDefaultBanner() async {
-    return getDefaultAsset('default_banner.jpg');
-  }
-
   Future<String> getDefaultAsset(String assetName) async {
-    final assetRef =
-        _storage.ref().child('public').child('assets').child(assetName);
-
+    final assetRef = _storage.ref(StoragePaths.publicAsset(assetName));
     return await assetRef.getDownloadURL();
   }
 }

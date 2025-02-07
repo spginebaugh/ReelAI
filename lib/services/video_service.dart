@@ -9,6 +9,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as path;
 import 'ffmpeg_service.dart';
 import 'package:flutter/foundation.dart';
+import '../utils/storage_paths.dart';
 
 part 'video_service.g.dart';
 
@@ -146,9 +147,9 @@ class VideoService {
         throw Exception('Failed to extract audio from video');
       }
 
-      // Use the provided videoId for storage paths
-      videoFileName = 'videos/$userId/original/$videoId/video.mp4';
-      audioFileName = 'videos/$userId/original/$videoId/audio.wav';
+      // Use StoragePaths utility for consistent path generation
+      videoFileName = StoragePaths.videoFile(userId, videoId);
+      audioFileName = StoragePaths.audioFile(userId, videoId);
 
       // Upload both files concurrently
       final videoUpload = _storage.ref(videoFileName).putFile(File(videoPath));

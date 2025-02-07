@@ -31,49 +31,17 @@ class UserService {
     required String userId,
     required File imageFile,
   }) async {
-    // Upload both original and thumbnail sizes
-    final [originalUrl, thumbnailUrl] = await Future.wait([
-      _userStorageService.uploadProfilePicture(
-        userId: userId,
-        imageFile: imageFile,
-        size: 'original',
-      ),
-      _userStorageService.uploadProfilePicture(
-        userId: userId,
-        imageFile: imageFile,
-        size: 'thumbnail',
-      ),
-    ]);
+    // Upload profile picture
+    final profilePictureUrl = await _userStorageService.uploadProfilePicture(
+      userId: userId,
+      imageFile: imageFile,
+    );
 
-    // Update user document with new URLs
+    // Update user document with new URL
     await _firestoreService.updateUser(userId, {
-      'profilePictureUrl': originalUrl,
-      'profileThumbnailUrl': thumbnailUrl,
-    });
-  }
-
-  Future<void> updateBannerImage({
-    required String userId,
-    required File imageFile,
-  }) async {
-    // Upload both original and mobile-optimized sizes
-    final [originalUrl, mobileUrl] = await Future.wait([
-      _userStorageService.uploadBannerImage(
-        userId: userId,
-        imageFile: imageFile,
-        size: 'original',
-      ),
-      _userStorageService.uploadBannerImage(
-        userId: userId,
-        imageFile: imageFile,
-        size: 'mobile',
-      ),
-    ]);
-
-    // Update user document with new URLs
-    await _firestoreService.updateUser(userId, {
-      'bannerUrl': originalUrl,
-      'bannerMobileUrl': mobileUrl,
+      'profilePictureUrl': profilePictureUrl,
+      // We no longer have separate thumbnail URLs in the new structure
+      'profileThumbnailUrl': profilePictureUrl,
     });
   }
 

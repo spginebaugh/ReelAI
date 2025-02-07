@@ -40,42 +40,74 @@ service firebase.storage {
         );
     }
 
-    // Videos section
-    match /videos/{userId}/{type}/{videoId}/{fileName} {
+    // User content section - matches {userId}/**
+    match /{userId}/{allPaths=**} {
+      // Base rule - users can only access their own content
+      allow read, write: if isOwner(userId);
+    }
+
+    // Video content rules
+    match /{userId}/{videoId}/video/video.mp4 {
       // Allow read for all authenticated users (assuming videos are public)
       allow read: if isAuthenticated();
       
       // Only allow upload by video owner with content and size validation
       allow create: if isOwner(userId)
-        && (type == "original" 
-            ? isValidContentType(request.resource.contentType, [
-                'video/mp4',
-                'video/quicktime',
-                'video/x-msvideo',
-                'audio/wav',  // Allow WAV audio files
-                'audio/x-wav'  // Alternative MIME type for WAV
-              ]) 
-            && (
-              (fileName == 'video.mp4' && isWithinSizeLimit(500 * 1024 * 1024)) ||  // 500MB for videos
-              (fileName == 'audio.wav' && isWithinSizeLimit(50 * 1024 * 1024))    // 50MB for audio
-            )
-            : type == "thumbnails" 
-            && isValidContentType(request.resource.contentType, [
-                'image/jpeg',
-                'image/png'
-              ])
-            && isWithinSizeLimit(5 * 1024 * 1024));  // 5MB for thumbnails
-      
-      // Allow owner to delete their content
-      allow delete: if isOwner(userId);
+        && isValidContentType(request.resource.contentType, [
+          'video/mp4',
+          'video/quicktime',
+          'video/x-msvideo'
+        ])
+        && isWithinSizeLimit(500 * 1024 * 1024);  // 500MB for videos
       
       // Prevent updates - files should be immutable
       allow update: if false;
     }
 
-    // User profile section
-    match /users/{userId}/profile/{type}/{fileName} {
-      // Allow public read for profile assets
+    // Audio content rules
+    match /{userId}/{videoId}/audio/audio_{lang}.wav {
+      allow read: if isAuthenticated();
+      
+      allow create: if isOwner(userId)
+        && isValidContentType(request.resource.contentType, [
+          'audio/wav',
+          'audio/x-wav'
+        ])
+        && isWithinSizeLimit(50 * 1024 * 1024);  // 50MB for audio
+      
+      allow update: if false;
+    }
+
+    // Subtitle content rules
+    match /{userId}/{videoId}/subtitles/subtitles_{lang}.json {
+      allow read: if isAuthenticated();
+      
+      allow create: if isOwner(userId)
+        && isValidContentType(request.resource.contentType, [
+          'application/json'
+        ])
+        && isWithinSizeLimit(1 * 1024 * 1024);  // 1MB for subtitles
+      
+      allow update: if false;
+    }
+
+    // Thumbnail content rules
+    match /{userId}/{videoId}/thumbnail/thumbnail.png {
+      allow read: if isAuthenticated();
+      
+      allow create: if isOwner(userId)
+        && isValidContentType(request.resource.contentType, [
+          'image/jpeg',
+          'image/png'
+        ])
+        && isWithinSizeLimit(5 * 1024 * 1024);  // 5MB for thumbnails
+      
+      allow update: if false;
+    }
+
+    // Profile picture rules
+    match /{userId}/profile_pic/profile_pic.png {
+      // Allow public read for profile pictures
       allow read: if isAuthenticated();
       
       // Only allow owner to upload with image validation
@@ -86,14 +118,13 @@ service firebase.storage {
           'image/webp'
         ])
         && isWithinSizeLimit(5 * 1024 * 1024);  // 5MB limit for profile images
-      
-      allow delete: if isOwner(userId);
     }
 
     // Temporary uploads section
-    match /users/{userId}/uploads/temp/{fileName} {
+    match /{userId}/temp/{fileName} {
       // Strict owner-only access
-      allow read, write: if isOwner(userId);
+      allow read, write: if isOwner(userId)
+        && isWithinSizeLimit(500 * 1024 * 1024);  // 500MB limit for temp files
       
       // Files older than 24 hours should be deleted by a Cloud Function
     }

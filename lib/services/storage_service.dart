@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../utils/storage_paths.dart';
 
 part 'storage_service.g.dart';
 
@@ -20,13 +21,7 @@ class StorageService {
       throw Exception('Video file does not exist at path: ${videoFile.path}');
     }
 
-    final videoRef = _storage
-        .ref()
-        .child('videos')
-        .child(userId)
-        .child('original')
-        .child(videoId)
-        .child('video.mp4');
+    final videoRef = _storage.ref(StoragePaths.videoFile(userId, videoId));
 
     final uploadTask = await videoRef.putFile(
       videoFile.absolute,
@@ -52,13 +47,8 @@ class StorageService {
       return null;
     }
 
-    final thumbnailRef = _storage
-        .ref()
-        .child('videos')
-        .child(userId)
-        .child('thumbnails')
-        .child(videoId)
-        .child('thumbnail.jpg');
+    final thumbnailRef =
+        _storage.ref(StoragePaths.thumbnailFile(userId, videoId));
 
     final uploadTask = await thumbnailRef.putFile(
       thumbnailFile.absolute,
@@ -83,34 +73,24 @@ class StorageService {
 
     try {
       // Get reference to the video's root directory
-      final videoRef = _storage.ref().child('videos').child(userId);
+      final videoRef =
+          _storage.ref(StoragePaths.videoDirectory(userId, videoId));
 
-      // List of directories to check and delete
-      final directoriesToDelete = [
-        'original/$videoId',
-        'thumbnails/$videoId',
-      ];
+      try {
+        // List all items in the directory
+        final ListResult result = await videoRef.listAll();
 
-      // Delete each directory recursively
-      for (final dir in directoriesToDelete) {
-        final dirRef = videoRef.child(dir);
-        try {
-          // List all items in the directory
-          final ListResult result = await dirRef.listAll();
-
-          // Delete all files in parallel
-          await Future.wait([
-            ...result.items.map((ref) => ref.delete()),
-            ...result.prefixes
-                .map((prefix) => _deleteDirectoryRecursive(prefix)),
-          ]);
-        } catch (e) {
-          if (e is FirebaseException && e.code == 'object-not-found') {
-            // Ignore if directory doesn't exist
-            continue;
-          }
-          realErrors.add('Failed to delete $dir: $e');
+        // Delete all files in parallel
+        await Future.wait([
+          ...result.items.map((ref) => ref.delete()),
+          ...result.prefixes.map((prefix) => _deleteDirectoryRecursive(prefix)),
+        ]);
+      } catch (e) {
+        if (e is FirebaseException && e.code == 'object-not-found') {
+          // Ignore if directory doesn't exist
+          return;
         }
+        realErrors.add('Failed to delete video content: $e');
       }
 
       // Only throw if we had real errors (not "not found" errors)
@@ -149,12 +129,7 @@ class StorageService {
     required String userId,
     required File imageFile,
   }) async {
-    final profileRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('profile')
-        .child('avatar.jpg');
+    final profileRef = _storage.ref(StoragePaths.profilePicture(userId));
 
     final uploadTask = await profileRef.putFile(
       imageFile,
@@ -162,6 +137,7 @@ class StorageService {
         contentType: 'image/jpeg',
         customMetadata: {
           'uploadedAt': DateTime.now().toIso8601String(),
+          'userId': userId,
         },
       ),
     );
@@ -175,13 +151,7 @@ class StorageService {
     required File file,
     required String fileName,
   }) async {
-    final tempRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('uploads')
-        .child('temp')
-        .child(fileName);
+    final tempRef = _storage.ref(StoragePaths.temporaryFile(userId, fileName));
 
     final uploadTask = await tempRef.putFile(file);
     return uploadTask.ref.getDownloadURL();
@@ -191,13 +161,7 @@ class StorageService {
     required String userId,
     required String fileName,
   }) async {
-    final tempRef = _storage
-        .ref()
-        .child('users')
-        .child(userId)
-        .child('uploads')
-        .child('temp')
-        .child(fileName);
+    final tempRef = _storage.ref(StoragePaths.temporaryFile(userId, fileName));
 
     try {
       await tempRef.delete();
@@ -211,9 +175,7 @@ class StorageService {
 
   // Public Asset Operations
   Future<String> getDefaultAssetUrl(String assetName) async {
-    final assetRef =
-        _storage.ref().child('public').child('assets').child(assetName);
-
+    final assetRef = _storage.ref(StoragePaths.publicAsset(assetName));
     return await assetRef.getDownloadURL();
   }
 }
