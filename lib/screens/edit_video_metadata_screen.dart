@@ -3,6 +3,9 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:chewie/chewie.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../models/video.dart';
 import '../services/video_service.dart';
@@ -27,6 +30,138 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
     final isLoading = useState(false);
     final errorMessage = useState<String?>(null);
     final editState = ref.watch(videoEditControllerProvider);
+    final isGeneratingSubtitles = useState(false);
+
+    Future<void> generateSubtitles() async {
+      try {
+        debugPrint('🎬 Starting subtitle generation process...');
+        isGeneratingSubtitles.value = true;
+        errorMessage.value = null;
+
+        // Check current auth state
+        debugPrint('👤 Checking authentication state...');
+        final auth = FirebaseAuth.instance;
+        debugPrint(
+            '- Current auth instance state: ${auth.currentUser != null ? 'Has user' : 'No user'}');
+
+        // Ensure user is authenticated
+        final user = auth.currentUser;
+        if (user == null) {
+          debugPrint('❌ No authenticated user found');
+          throw Exception('User must be authenticated to generate subtitles');
+        }
+
+        // Log user details
+        debugPrint('✅ User authenticated:');
+        debugPrint('- User ID: ${user.uid}');
+        debugPrint('- Email: ${user.email}');
+        debugPrint('- Email verified: ${user.emailVerified}');
+        debugPrint(
+            '- Provider ID: ${user.providerData.map((p) => p.providerId).join(', ')}');
+
+        // Force token refresh and wait for it
+        debugPrint('🔄 Refreshing ID token...');
+        final idToken = await user.getIdToken(true);
+        debugPrint('✅ Got fresh ID token:');
+        debugPrint('- Token length: ${idToken?.length ?? 0}');
+        debugPrint('- Token exists: ${idToken != null}');
+
+        // Log video details
+        debugPrint('📹 Video details:');
+        debugPrint('- Video ID: ${video.id}');
+        debugPrint('- Uploader ID: ${video.uploaderId}');
+        debugPrint('- Video title: ${video.title}');
+        debugPrint('- Created at: ${video.createdAt}');
+
+        // Verify video ownership
+        debugPrint('🔍 Verifying video ownership...');
+        if (video.uploaderId != user.uid) {
+          debugPrint('❌ Video ownership mismatch:');
+          debugPrint('- Video uploader: ${video.uploaderId}');
+          debugPrint('- Current user: ${user.uid}');
+          throw Exception(
+              'Not authorized to generate subtitles for this video');
+        }
+        debugPrint('✅ Video ownership verified');
+
+        debugPrint('📞 Setting up Cloud Function call...');
+        // Force token refresh to ensure we have a fresh token
+        final freshToken =
+            await FirebaseAuth.instance.currentUser?.getIdToken(true);
+        debugPrint('🔑 Fresh token details:');
+        debugPrint('- Token: ${freshToken?.substring(0, 20)}... (truncated)');
+        debugPrint('- Full length: ${freshToken?.length}');
+
+        debugPrint('🌐 Initializing Firebase Functions...');
+        final functions = FirebaseFunctions.instanceFor(
+          region: 'us-central1',
+          app: Firebase.app(),
+        );
+        debugPrint('✅ Functions instance created');
+        debugPrint('- App name: ${Firebase.app().name}');
+        debugPrint('- Options: ${Firebase.app().options.projectId}');
+
+        debugPrint('🔧 Creating callable...');
+        final callable = functions.httpsCallable(
+          'generateSubtitles',
+          options: HttpsCallableOptions(
+            timeout: const Duration(minutes: 5),
+          ),
+        );
+        debugPrint('✅ Callable created');
+
+        debugPrint('🚀 Calling generateSubtitles function...');
+        debugPrint('📤 Request payload:');
+        debugPrint('- videoId: ${video.id}');
+
+        final result = await callable.call<Map<String, dynamic>>({
+          'videoId': video.id,
+        });
+
+        debugPrint('✅ Function call completed');
+        debugPrint('📥 Response details:');
+        debugPrint('- Raw data: ${result.data}');
+        debugPrint('- Success: ${result.data['success']}');
+        debugPrint('- Subtitles path: ${result.data['subtitlesPath']}');
+
+        if (result.data['success'] == true) {
+          debugPrint('🎉 Subtitles generated successfully');
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Subtitles generated successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          debugPrint('⚠️ Function returned success: false');
+          throw Exception('Function did not return success');
+        }
+      } on FirebaseFunctionsException catch (e) {
+        debugPrint('❌ Firebase Functions Error:');
+        debugPrint('- Code: ${e.code}');
+        debugPrint('- Message: ${e.message}');
+        debugPrint('- Details: ${e.details}');
+        debugPrint('- Stack trace: ${e.stackTrace}');
+
+        if (e.code == 'unauthenticated') {
+          debugPrint('🔐 Authentication error detected');
+          errorMessage.value =
+              'Authentication error. Please try logging out and back in.';
+        } else {
+          errorMessage.value = 'Failed to generate subtitles: ${e.message}';
+        }
+      } catch (e, stack) {
+        debugPrint('❌ Unexpected error:');
+        debugPrint('- Error: $e');
+        debugPrint('- Stack trace: $stack');
+        errorMessage.value = 'Failed to generate subtitles: $e';
+      } finally {
+        debugPrint('🏁 Subtitle generation process completed');
+        isGeneratingSubtitles.value = false;
+      }
+    }
 
     Future<void> saveChanges() async {
       try {
@@ -158,6 +293,25 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                     ),
                     maxLines: 5,
                     enabled: !isLoading.value,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.tonalIcon(
+                    onPressed:
+                        isGeneratingSubtitles.value ? null : generateSubtitles,
+                    icon: isGeneratingSubtitles.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.subtitles),
+                    label: Text(
+                      isGeneratingSubtitles.value
+                          ? 'Generating Subtitles...'
+                          : 'Get Subtitles',
+                    ),
                   ),
                 ],
               ),

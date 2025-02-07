@@ -2,28 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:reel_ai/router/app_router.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:reel_ai/utils/app_theme.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+    await Firebase.initializeApp();
 
-  // Initialize App Check with debug provider
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-  );
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  // Set preferred orientations to portrait only
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  runApp(const ProviderScope(child: MyApp()));
+    runApp(const ProviderScope(child: MyApp()));
+  } catch (e, stack) {
+    debugPrint('Error initializing app: $e');
+    debugPrint('Stack trace: $stack');
+    rethrow;
+  }
 }
 
 class MyApp extends ConsumerWidget {

@@ -46,7 +46,7 @@ dependencies:
   cloud_firestore: ^5.6.2
   firebase_storage: ^12.4.1
   firebase_messaging: ^15.2.1
-  firebase_app_check: ^0.3.2+1
+  cloud_functions: ^5.3.2
 
   # video playback and editing packages
   video_player: ^2.9.2

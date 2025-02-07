@@ -66,7 +66,7 @@ class FFmpegService {
       );
 
       final session = await FFmpegKit.execute(
-        '-i "$videoPath" -vn -acodec pcm_s16le -ar 44100 -ac 2 "$outputPath"',
+        '-i "$videoPath" -vn -acodec pcm_s16le -ar 44100 -ac 2 -f wav "$outputPath"',
       );
 
       final returnCode = await session.getReturnCode();
