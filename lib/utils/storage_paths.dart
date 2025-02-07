@@ -20,14 +20,18 @@ class StoragePaths {
   static String videoFile(String userId, String videoId) =>
       '$userId/$videoId/$_videoPath/video.mp4';
 
-  /// Returns the storage path for an audio file with optional language
-  /// Format: {userId}/{videoId}/audio/audio_{lang}.wav
+  /// Returns the storage path for an audio file with optional language and extension
+  /// Format: {userId}/{videoId}/audio/audio_{lang}.{ext}
   static String audioFile(
     String userId,
     String videoId, {
     String lang = 'english',
-  }) =>
-      '$userId/$videoId/$_audioPath/audio_$lang.wav';
+    String ext = 'wav',
+  }) {
+    assert(ext == 'wav' || ext == 'mp3',
+        'Audio extension must be either wav or mp3');
+    return '$userId/$videoId/$_audioPath/audio_$lang.$ext';
+  }
 
   /// Returns the storage path for a subtitles file with optional language
   /// Format: {userId}/{videoId}/subtitles/subtitles_{lang}.json

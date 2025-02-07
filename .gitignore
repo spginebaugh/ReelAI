@@ -57,3 +57,5 @@ firebase_options.dart
 
 # Default assets
 assets/defaults/
+
+testfiles/

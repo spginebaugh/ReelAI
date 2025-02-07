@@ -65,28 +65,32 @@ service firebase.storage {
     }
 
     // Audio content rules
-    match /{userId}/{videoId}/audio/audio_{lang}.wav {
+    match /{userId}/{videoId}/audio/{filename} {
       allow read: if isAuthenticated();
       
       allow create: if isOwner(userId)
         && isValidContentType(request.resource.contentType, [
           'audio/wav',
-          'audio/x-wav'
+          'audio/x-wav',
+          'audio/mpeg',
+          'audio/mp3'
         ])
-        && isWithinSizeLimit(50 * 1024 * 1024);  // 50MB for audio
+        && isWithinSizeLimit(50 * 1024 * 1024)  // 50MB for audio
+        && (filename.matches('audio_[a-zA-Z]+\\.(wav|mp3)'));
       
       allow update: if false;
     }
 
     // Subtitle content rules
-    match /{userId}/{videoId}/subtitles/subtitles_{lang}.json {
+    match /{userId}/{videoId}/subtitles/{filename} {
       allow read: if isAuthenticated();
       
       allow create: if isOwner(userId)
         && isValidContentType(request.resource.contentType, [
           'application/json'
         ])
-        && isWithinSizeLimit(1 * 1024 * 1024);  // 1MB for subtitles
+        && isWithinSizeLimit(1 * 1024 * 1024)  // 1MB for subtitles
+        && filename.matches('subtitles_[a-zA-Z]+\\.json');
       
       allow update: if false;
     }

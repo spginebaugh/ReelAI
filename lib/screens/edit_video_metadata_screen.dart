@@ -310,7 +310,7 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                     label: Text(
                       isGeneratingSubtitles.value
                           ? 'Generating Subtitles...'
-                          : 'Get Subtitles',
+                          : 'Translate Audio',
                     ),
                   ),
                 ],
