@@ -16,6 +16,8 @@ import '../widgets/language_selector_button.dart';
 import '../state/video_edit_provider.dart';
 import '../state/audio_language_provider.dart';
 import '../state/audio_player_provider.dart';
+import '../models/subtitle_state.dart';
+import '../state/subtitle_controller.dart';
 
 class EditVideoScreen extends ConsumerStatefulWidget {
   final Video video;
@@ -168,8 +170,39 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                       child: Center(
                         child: Container(
                           color: Colors.black,
-                          child:
+                          child: Stack(
+                            alignment: Alignment.bottomCenter,
+                            children: [
                               Chewie(controller: editState.chewieController!),
+                              // Subtitle overlay
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final subtitleState =
+                                      ref.watch(subtitleControllerProvider);
+                                  if (!subtitleState.isEnabled ||
+                                      subtitleState.currentText == null) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    margin: const EdgeInsets.only(bottom: 48.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      subtitleState.currentText!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -277,6 +310,99 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                                 onPressed: _showSpeedDialog,
                               ),
                               const Spacer(),
+                              // Add subtitle toggle button
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final subtitleState =
+                                      ref.watch(subtitleControllerProvider);
+
+                                  return IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: Icon(
+                                      Icons.closed_caption,
+                                      color: subtitleState.isEnabled
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : null,
+                                    ),
+                                    onPressed: () {
+                                      final RenderBox button = context
+                                          .findRenderObject() as RenderBox;
+                                      final RenderBox overlay =
+                                          Navigator.of(context)
+                                              .overlay!
+                                              .context
+                                              .findRenderObject() as RenderBox;
+                                      final position = RelativeRect.fromRect(
+                                        Rect.fromPoints(
+                                          button.localToGlobal(Offset.zero,
+                                              ancestor: overlay),
+                                          button.localToGlobal(
+                                              button.size
+                                                  .bottomRight(Offset.zero),
+                                              ancestor: overlay),
+                                        ),
+                                        Offset.zero & overlay.size,
+                                      );
+
+                                      showMenu<bool>(
+                                        context: context,
+                                        position: position,
+                                        items: [
+                                          PopupMenuItem<bool>(
+                                            value: false,
+                                            child: Row(
+                                              children: [
+                                                if (!subtitleState.isEnabled)
+                                                  Icon(
+                                                    Icons.check,
+                                                    size: 18,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary,
+                                                  )
+                                                else
+                                                  const SizedBox(width: 18),
+                                                const SizedBox(width: 8),
+                                                const Text('Off'),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuItem<bool>(
+                                            value: true,
+                                            child: Row(
+                                              children: [
+                                                if (subtitleState.isEnabled)
+                                                  Icon(
+                                                    Icons.check,
+                                                    size: 18,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary,
+                                                  )
+                                                else
+                                                  const SizedBox(width: 18),
+                                                const SizedBox(width: 8),
+                                                const Text('English'),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ).then((enabled) {
+                                        if (enabled != null) {
+                                          ref
+                                              .read(subtitleControllerProvider
+                                                  .notifier)
+                                              .toggleSubtitles();
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 16),
                               Consumer(
                                 builder: (context, ref, _) {
                                   final languages = ref.watch(

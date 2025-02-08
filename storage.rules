@@ -87,10 +87,12 @@ service firebase.storage {
       
       allow create: if isOwner(userId)
         && isValidContentType(request.resource.contentType, [
-          'application/json'
+          'application/json',
+          'text/plain',  // For SRT files
+          'text/vtt'     // For VTT files
         ])
         && isWithinSizeLimit(1 * 1024 * 1024)  // 1MB for subtitles
-        && filename.matches('subtitles_[a-zA-Z]+\\.json');
+        && filename.matches('subtitles_[a-zA-Z]+\\.(json|srt|vtt)');
       
       allow update: if false;
     }

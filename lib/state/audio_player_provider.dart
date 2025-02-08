@@ -96,7 +96,7 @@ class AudioPlayerController extends _$AudioPlayerController {
         isInitialized: true,
         isPlaying: false,
         position: Duration.zero,
-        currentLanguage: 'portuguese', // Set default language to Portuguese
+        currentLanguage: 'english', // Set default language to english
       );
 
       // Set up listeners

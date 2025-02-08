@@ -1,27 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'video_edit_provider.dart';
+part of 'subtitle_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$videoEditControllerHash() =>
-    r'7771c62e9adb2100687f2aa0e3e18adf213344f1';
+String _$subtitleControllerHash() =>
+    r'1fd6adcd763371fa9dec45a21ed46976be233c2a';
 
-/// See also [VideoEditController].
-@ProviderFor(VideoEditController)
-final videoEditControllerProvider = AutoDisposeAsyncNotifierProvider<
-    VideoEditController, VideoEditState>.internal(
-  VideoEditController.new,
-  name: r'videoEditControllerProvider',
+/// See also [SubtitleController].
+@ProviderFor(SubtitleController)
+final subtitleControllerProvider =
+    AutoDisposeNotifierProvider<SubtitleController, SubtitleState>.internal(
+  SubtitleController.new,
+  name: r'subtitleControllerProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$videoEditControllerHash,
+      : _$subtitleControllerHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$VideoEditController = AutoDisposeAsyncNotifier<VideoEditState>;
+typedef _$SubtitleController = AutoDisposeNotifier<SubtitleState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

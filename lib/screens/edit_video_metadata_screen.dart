@@ -30,12 +30,12 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
     final isLoading = useState(false);
     final errorMessage = useState<String?>(null);
     final editState = ref.watch(videoEditControllerProvider);
-    final isGeneratingSubtitles = useState(false);
+    final isGeneratingTranslation = useState(false);
 
-    Future<void> generateSubtitles() async {
+    Future<void> generateTranslation() async {
       try {
-        debugPrint('🎬 Starting subtitle generation process...');
-        isGeneratingSubtitles.value = true;
+        debugPrint('🎬 Starting translation generation process...');
+        isGeneratingTranslation.value = true;
         errorMessage.value = null;
 
         // Check current auth state
@@ -48,7 +48,7 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         final user = auth.currentUser;
         if (user == null) {
           debugPrint('❌ No authenticated user found');
-          throw Exception('User must be authenticated to generate subtitles');
+          throw Exception('User must be authenticated to generate translation');
         }
 
         // Log user details
@@ -80,7 +80,7 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
           debugPrint('- Video uploader: ${video.uploaderId}');
           debugPrint('- Current user: ${user.uid}');
           throw Exception(
-              'Not authorized to generate subtitles for this video');
+              'Not authorized to generate translation for this video');
         }
         debugPrint('✅ Video ownership verified');
 
@@ -103,14 +103,14 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
 
         debugPrint('🔧 Creating callable...');
         final callable = functions.httpsCallable(
-          'generateSubtitles',
+          'generateTranslation',
           options: HttpsCallableOptions(
             timeout: const Duration(minutes: 5),
           ),
         );
         debugPrint('✅ Callable created');
 
-        debugPrint('🚀 Calling generateSubtitles function...');
+        debugPrint('🚀 Calling generateTranslation function...');
         debugPrint('📤 Request payload:');
         debugPrint('- videoId: ${video.id}');
 
@@ -122,14 +122,13 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         debugPrint('📥 Response details:');
         debugPrint('- Raw data: ${result.data}');
         debugPrint('- Success: ${result.data['success']}');
-        debugPrint('- Subtitles path: ${result.data['subtitlesPath']}');
 
         if (result.data['success'] == true) {
-          debugPrint('🎉 Subtitles generated successfully');
+          debugPrint('🎉 Translation generated successfully');
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Subtitles generated successfully'),
+                content: Text('Translation generated successfully'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -150,16 +149,16 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
           errorMessage.value =
               'Authentication error. Please try logging out and back in.';
         } else {
-          errorMessage.value = 'Failed to generate subtitles: ${e.message}';
+          errorMessage.value = 'Failed to generate translation: ${e.message}';
         }
       } catch (e, stack) {
         debugPrint('❌ Unexpected error:');
         debugPrint('- Error: $e');
         debugPrint('- Stack trace: $stack');
-        errorMessage.value = 'Failed to generate subtitles: $e';
+        errorMessage.value = 'Failed to generate translation: $e';
       } finally {
-        debugPrint('🏁 Subtitle generation process completed');
-        isGeneratingSubtitles.value = false;
+        debugPrint('🏁 Translation generation process completed');
+        isGeneratingTranslation.value = false;
       }
     }
 
@@ -298,10 +297,10 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                   Column(
                     children: [
                       FilledButton.icon(
-                        onPressed: isGeneratingSubtitles.value
+                        onPressed: isGeneratingTranslation.value
                             ? null
-                            : () => generateSubtitles(),
-                        icon: isGeneratingSubtitles.value
+                            : () => generateTranslation(),
+                        icon: isGeneratingTranslation.value
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -309,10 +308,10 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.subtitles),
+                            : const Icon(Icons.translate),
                         label: Text(
-                          isGeneratingSubtitles.value
-                              ? 'Generating Subtitles...'
+                          isGeneratingTranslation.value
+                              ? 'Generating Translation...'
                               : 'Translate Audio',
                         ),
                       ),

@@ -33,14 +33,20 @@ class StoragePaths {
     return '$userId/$videoId/$_audioPath/audio_$lang.$ext';
   }
 
-  /// Returns the storage path for a subtitles file with optional language
-  /// Format: {userId}/{videoId}/subtitles/subtitles_{lang}.json
+  /// Returns the storage path for a subtitles file with optional language and format
+  /// Format: {userId}/{videoId}/subtitles/subtitles_{lang}.{format}
   static String subtitlesFile(
     String userId,
     String videoId, {
     String lang = 'english',
-  }) =>
-      '$userId/$videoId/$_subtitlesPath/subtitles_$lang.json';
+    String format = 'json',
+  }) {
+    assert(
+      format == 'json' || format == 'srt' || format == 'vtt',
+      'Subtitle format must be either json, srt, or vtt',
+    );
+    return '$userId/$videoId/$_subtitlesPath/subtitles_$lang.$format';
+  }
 
   /// Returns the storage path for a video thumbnail
   /// Format: {userId}/{videoId}/thumbnail/thumbnail.png

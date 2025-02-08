@@ -3,12 +3,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/video.dart';
 import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
 import '../services/video_processing_service.dart';
+import '../utils/storage_paths.dart';
+import 'auth_provider.dart';
 import 'audio_player_provider.dart';
+import 'subtitle_controller.dart';
 import 'package:flutter/foundation.dart';
+import '../state/subtitle_controller.dart';
 
 part 'video_edit_provider.g.dart';
 
@@ -73,6 +78,23 @@ class VideoEditController extends _$VideoEditController {
         }
       }
 
+      // Get subtitle URL
+      final storage = FirebaseStorage.instance;
+      final user = ref.read(authStateProvider).requireValue!;
+      final subtitlePath = StoragePaths.subtitlesFile(
+        user.uid,
+        video.id,
+        format: 'vtt',
+      );
+
+      String? subtitleUrl;
+      try {
+        subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
+        debugPrint('🎥 VideoEdit: Got subtitle URL: $subtitleUrl');
+      } catch (e) {
+        debugPrint('⚠️ VideoEdit: No subtitles found: $e');
+      }
+
       debugPrint('🎥 VideoEdit: Creating Chewie controller with muted audio');
       final chewieController = ChewieController(
         videoPlayerController: videoPlayerController,
@@ -124,11 +146,11 @@ class VideoEditController extends _$VideoEditController {
             .initialize(videoPlayerController);
         debugPrint('🎥 VideoEdit: Audio player initialized');
 
-        // Set up the initial Portuguese audio
-        debugPrint('🎥 VideoEdit: Setting initial Portuguese audio');
+        // Set up the initial English audio
+        debugPrint('🎥 VideoEdit: Setting initial English audio');
         await ref
             .read(audioPlayerControllerProvider.notifier)
-            .switchLanguage(video.id, 'portuguese');
+            .switchLanguage(video.id, 'english');
         debugPrint('✅ VideoEdit: Video initialization complete');
 
         // Final volume check
@@ -137,17 +159,22 @@ class VideoEditController extends _$VideoEditController {
               '⚠️ VideoEdit: Volume changed after audio setup, re-muting');
           await videoPlayerController.setVolume(0);
         }
-      } catch (audioError) {
-        debugPrint('❌ VideoEdit: Audio initialization failed: $audioError');
-        debugPrint('Stack trace:');
-        debugPrint(StackTrace.current.toString());
-        // Don't swallow audio errors anymore - they're important for debugging
+
+        // Initialize subtitle system if subtitles are available
+        if (subtitleUrl != null) {
+          debugPrint('🎥 VideoEdit: Initializing subtitle system');
+          await ref
+              .read(subtitleControllerProvider.notifier)
+              .initialize(videoPlayerController, subtitleUrl);
+          debugPrint('✅ VideoEdit: Subtitle system initialized');
+        }
+      } catch (e) {
+        debugPrint('❌ VideoEdit: Error initializing audio/subtitles: $e');
         rethrow;
       }
-    } catch (e, st) {
-      debugPrint('❌ VideoEdit: Initialization failed: $e');
-      debugPrint(st.toString());
-      state = AsyncValue.error(e, st);
+    } catch (e) {
+      debugPrint('❌ VideoEdit: Error initializing video: $e');
+      state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
