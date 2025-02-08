@@ -166,6 +166,12 @@ class VideoEditController extends _$VideoEditController {
           await ref
               .read(subtitleControllerProvider.notifier)
               .initialize(videoPlayerController, subtitleUrl);
+
+          // Load available subtitle languages
+          await ref
+              .read(subtitleControllerProvider.notifier)
+              .loadAvailableLanguages(video.id, user.uid);
+
           debugPrint('✅ VideoEdit: Subtitle system initialized');
         }
       } catch (e) {

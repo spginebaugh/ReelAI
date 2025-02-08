@@ -4,6 +4,8 @@ import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
 import '../models/subtitle_state.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import '../utils/storage_paths.dart';
 
 part 'subtitle_controller.g.dart';
 
@@ -27,6 +29,84 @@ class SubtitleController extends _$SubtitleController {
     }
   }
 
+  Future<void> loadAvailableLanguages(String videoId, String userId) async {
+    try {
+      final languages = await _loadAvailableSubtitleLanguages(videoId, userId);
+      state = state.copyWith(availableLanguages: languages);
+      debugPrint('✅ Subtitles: Loaded ${languages.length} available languages');
+    } catch (e) {
+      debugPrint('❌ Subtitles: Error loading available languages: $e');
+      state = state.copyWith(availableLanguages: ['english']);
+    }
+  }
+
+  Future<void> switchLanguage(
+      String videoId, String userId, String language) async {
+    try {
+      debugPrint('🎥 Subtitles: Switching to language: $language');
+
+      final storage = FirebaseStorage.instance;
+      final subtitlePath = StoragePaths.subtitlesFile(
+        userId,
+        videoId,
+        lang: language,
+        format: 'vtt',
+      );
+
+      final subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
+      final response = await http.get(Uri.parse(subtitleUrl));
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load subtitles for language: $language');
+      }
+
+      final entries = _parseVTT(response.body);
+      state = state.copyWith(
+        entries: entries,
+        currentLanguage: language,
+      );
+
+      debugPrint(
+          '✅ Subtitles: Switched to $language with ${entries.length} entries');
+    } catch (e) {
+      debugPrint('❌ Subtitles: Error switching language: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<String>> _loadAvailableSubtitleLanguages(
+      String videoId, String userId) async {
+    try {
+      final storage = FirebaseStorage.instance;
+      final subtitlesDir =
+          '${StoragePaths.videoDirectory(userId, videoId)}/subtitles';
+      final result = await storage.ref(subtitlesDir).listAll();
+
+      // Extract languages from subtitle file names (format: subtitles_language.vtt)
+      final languages = result.items
+          .where((ref) => ref.name.endsWith('.vtt'))
+          .map((ref) {
+            final parts = ref.name.split('_');
+            if (parts.length != 2) return null;
+            return parts[1].split('.')[0];
+          })
+          .where((lang) => lang != null)
+          .map((lang) => lang!)
+          .toList();
+
+      // Ensure English is first if available
+      if (languages.contains('english')) {
+        languages.remove('english');
+        languages.insert(0, 'english');
+      }
+
+      return languages;
+    } catch (e) {
+      debugPrint('❌ Subtitles: Error loading available languages: $e');
+      return ['english'];
+    }
+  }
+
   Future<void> initialize(
       VideoPlayerController controller, String subtitleUrl) async {
     _videoController = controller;
@@ -38,7 +118,10 @@ class SubtitleController extends _$SubtitleController {
       }
 
       final entries = _parseVTT(response.body);
-      state = state.copyWith(entries: entries);
+      state = state.copyWith(
+        entries: entries,
+        currentLanguage: 'english',
+      );
       debugPrint('🎥 Subtitles: Parsed ${entries.length} subtitle entries');
 
       // Start subtitle sync timer

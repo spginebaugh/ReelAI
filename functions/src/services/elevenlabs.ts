@@ -11,12 +11,12 @@ export const elevenLabsApiKey = defineSecret("ELEVENLABS_API_KEY");
  * Calls ElevenLabs API to dub an audio file
  * @param {string} audioPath - Path to the input audio file
  * @param {string} targetLang - Target language code
- * @return {Promise<Buffer>} - Resolves with the dubbed audio data
+ * @return {Promise<{audio: Buffer, dubbingId: string}>} - Audio data and ID
  */
 export async function dubAudio(
   audioPath: string,
   targetLang: string,
-): Promise<Buffer> {
+): Promise<{audio: Buffer; dubbingId: string}> {
   logger.info("🎙️ Starting audio dubbing process:", {
     audioPath,
     targetLang,
@@ -50,8 +50,8 @@ export async function dubAudio(
       error,
     });
     throw new Error(
-      `ElevenLabs API error: ${response.status} `+
-      `${response.statusText} - ${error}`
+      "ElevenLabs API error: " +
+      `${response.status} ${response.statusText} - ${error}`
     );
   }
 
@@ -77,42 +77,10 @@ export async function dubAudio(
       elapsedTime: attempts * 5,
     });
 
-    // First check the dubbing status
-    const statusResponse = await fetch(
-      `https://api.elevenlabs.io/v1/dubbing/${dubbingId}`,
-      {
-        headers: {
-          "xi-api-key": elevenLabsApiKey.value(),
-        },
-      }
-    );
-
-    if (!statusResponse.ok) {
-      const error = await statusResponse.text();
-      logger.error("❌ Error checking dubbing status:", {
-        dubbingId,
-        status: statusResponse.status,
-        error,
-        attempts,
-      });
-      throw new Error(
-        `Error checking dubbing status: ${statusResponse.status} - ${error}`
-      );
-    }
-
-    const status = await statusResponse.json();
+    const status = await getDubbingStatus(dubbingId);
     logger.info("📊 Dubbing status:", {
       dubbingId,
       status: status.status,
-      attempts,
-    });
-
-    // Add detailed logging of the entire status response
-    logger.info("📋 Full status response:", {
-      dubbingId,
-      fullResponse: status,
-      responseKeys: Object.keys(status),
-      responseType: typeof status,
       attempts,
     });
 
@@ -136,7 +104,8 @@ export async function dubAudio(
           attempts,
         });
         throw new Error(
-          `Error getting dubbed audio: ${audioResponse.status} - ${error}`
+          "Error getting dubbed audio: " +
+          `${audioResponse.status} - ${error}`
         );
       }
 
@@ -174,79 +143,101 @@ export async function dubAudio(
     throw new Error("Failed to get dubbed audio");
   }
 
-  return audioBuffer;
+  return {
+    audio: audioBuffer,
+    dubbingId,
+  };
 }
 
 /**
- * Calls ElevenLabs API to generate transcript from audio file
- * @param {string} audioPath - Path to the input audio file
- * @param {string} [language] - Optional ISO-639-1 or ISO-639-3 language code
- * @return {Promise<TranscriptResponse>} - Resolves with the transcript data
+ * Gets the current status of a dubbing job
+ * @param {string} dubbingId - The ID of the dubbing job to check
+ * @return {Promise<DubbingStatus>} - Resolves with the current status
  */
-export async function generateTranscript(
-  audioPath: string,
-  language?: string,
-): Promise<TranscriptResponse> {
-  logger.info("🎙️ Starting speech-to-text transcription:", {
-    audioPath,
-    language,
-    audioExists: await fs.promises.access(audioPath)
-      .then(() => true)
-      .catch(() => false),
-    audioSize: fs.statSync(audioPath).size,
-  });
-
-  const formData = new FormData();
-  formData.append("file", fs.createReadStream(audioPath));
-  formData.append("model_id", "scribe_v1");
-  if (language) {
-    formData.append("language_code", language);
-  }
-
-  logger.info("📤 Sending request to ElevenLabs speech-to-text API...");
-  const response = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
-    method: "POST",
-    headers: {
-      "xi-api-key": elevenLabsApiKey.value(),
-      ...formData.getHeaders(),
-    },
-    body: formData,
-  });
+async function getDubbingStatus(dubbingId: string): Promise<DubbingStatus> {
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/dubbing/${dubbingId}`,
+    {
+      headers: {
+        "xi-api-key": elevenLabsApiKey.value(),
+      },
+    }
+  );
 
   if (!response.ok) {
     const error = await response.text();
-    logger.error("❌ ElevenLabs speech-to-text API error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error,
-    });
     throw new Error(
-      `ElevenLabs speech-to-text API error: ${response.status} ` +
-      `${response.statusText} - ${error}`
+      "Error checking dubbing status: " +
+      `${response.status} - ${error}`
     );
   }
 
-  const result = await response.json();
-  logger.info("✅ Successfully generated transcript:", {
-    languageCode: result.language_code,
-    confidence: result.language_probability,
-    textLength: result.text.length,
-    wordCount: result.words.length,
-  });
-
-  return result;
+  return response.json();
 }
 
-// Add TypeScript interface for the transcript response
-interface TranscriptResponse {
-  language_code: string;
-  language_probability: number;
-  text: string;
-  words: Array<{
-    text: string;
-    type: string;
-    speaker_id: string;
-    start: number;
-    end: number;
-  }>;
+/**
+ * Gets the transcript for a dubbed audio in specified format
+ * @param {string} dubbingId - The ID of the dubbing job
+ * @param {string} languageCode - The language of transcript (e.g., "pt")
+ * @param {"srt" | "webvtt"} format - The desired subtitle format
+ * @return {Promise<string>} - Resolves with the transcript content
+ */
+export async function getDubbedTranscript(
+  dubbingId: string,
+  languageCode: string,
+  format: "srt" | "webvtt" = "srt"
+): Promise<string> {
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/dubbing/${dubbingId}/transcript/${languageCode}?format_type=${format}`,
+    {
+      headers: {
+        "xi-api-key": elevenLabsApiKey.value(),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(
+      "Error getting dubbed transcript: " +
+      `${response.status} - ${error}`
+    );
+  }
+
+  return response.text();
+}
+
+/**
+ * Gets both SRT and VTT subtitles for a dubbed audio
+ * @param {string} dubbingId - The ID of the dubbing job
+ * @param {string} languageCode - The language code (e.g., "pt")
+ * @return {Promise<{srt: string, vtt: string}>} - both subtitle formats
+ */
+export async function getSubtitlesForDubbing(
+  dubbingId: string,
+  languageCode: string,
+): Promise<{srt: string; vtt: string}> {
+  logger.info("📝 Getting subtitles for dubbing:", {
+    dubbingId,
+    languageCode,
+  });
+
+  const [srt, vtt] = await Promise.all([
+    getDubbedTranscript(dubbingId, languageCode, "srt"),
+    getDubbedTranscript(dubbingId, languageCode, "webvtt"),
+  ]);
+
+  return {srt, vtt};
+}
+
+// Interface for dubbing result
+export interface DubbingResult {
+  audio: Buffer;
+  dubbingId: string;
+}
+
+// Interface for dubbing status
+interface DubbingStatus {
+  status: "queued" | "processing" | "done" | "dubbed" | "error";
+  error?: string;
 }

@@ -32,6 +32,7 @@ const path = __importStar(require("path"));
 const https_1 = require("firebase-functions/v2/https");
 const storage_1 = require("firebase-admin/storage");
 const elevenlabs_1 = require("../services/elevenlabs");
+const subtitle_converter_1 = require("../services/subtitle-converter");
 // Using v2 functions with correct auth setup
 exports.generateTranslation = (0, https_1.onCall)({
     enforceAppCheck: false,
@@ -76,7 +77,6 @@ exports.generateTranslation = (0, https_1.onCall)({
             "audio_english.mp3",
         ].join("/");
         let tempMp3Path;
-        let tempDubbedPath;
         try {
             // Download the existing MP3 file
             tempMp3Path = path.join(os.tmpdir(), `${videoId}.mp3`);
@@ -89,50 +89,84 @@ exports.generateTranslation = (0, https_1.onCall)({
             });
             // Dub the audio to Portuguese
             logger.info("🎙️ Starting Portuguese dubbing process");
-            const dubbedAudio = await (0, elevenlabs_1.dubAudio)(tempMp3Path, "pt");
-            // Save dubbed audio to temp file
-            tempDubbedPath = path.join(os.tmpdir(), `${videoId}_pt.mp3`);
-            logger.info("💾 Saving dubbed audio to temp file:", {
-                path: tempDubbedPath,
-            });
-            await fs.promises.writeFile(tempDubbedPath, dubbedAudio);
+            const { audio: dubbedAudio, dubbingId, } = await (0, elevenlabs_1.dubAudio)(tempMp3Path, "pt");
             // Upload dubbed MP3 to Firebase Storage
-            const dubbedStoragePath = `${videoData.uploaderId}/${videoId}/audio/audio_portuguese.mp3`;
+            const dubbedStoragePath = [
+                videoData.uploaderId,
+                videoId,
+                "audio",
+                "audio_portuguese.mp3",
+            ].join("/");
             logger.info("📤 Uploading Portuguese audio to storage:", {
                 path: dubbedStoragePath,
             });
-            await (0, storage_1.getStorage)().bucket().upload(tempDubbedPath, {
-                destination: dubbedStoragePath,
-                metadata: {
-                    contentType: "audio/mp3",
-                },
+            await (0, storage_1.getStorage)().bucket().file(dubbedStoragePath).save(dubbedAudio, {
+                contentType: "audio/mp3",
             });
-            logger.info("✅ Audio translation complete:", {
+            // Get subtitles for the dubbed audio
+            logger.info("📝 Getting Portuguese subtitles...");
+            const { srt, vtt } = await (0, elevenlabs_1.getSubtitlesForDubbing)(dubbingId, "pt");
+            // Validate subtitle formats
+            if (!(0, subtitle_converter_1.validateSubtitleFormat)(srt, "srt")) {
+                throw new Error("Generated SRT content failed validation");
+            }
+            if (!(0, subtitle_converter_1.validateSubtitleFormat)(vtt, "vtt")) {
+                throw new Error("Generated VTT content failed validation");
+            }
+            // Calculate the base subtitles path
+            const baseSubtitlesPath = [
+                videoData.uploaderId,
+                videoId,
+                "subtitles",
+                "subtitles_portuguese",
+            ].join("/");
+            // Upload all subtitle formats
+            const uploads = [
+                // SRT subtitles
+                (0, storage_1.getStorage)()
+                    .bucket()
+                    .file(`${baseSubtitlesPath}.srt`)
+                    .save(srt, {
+                    contentType: "text/plain",
+                    metadata: {
+                        language: "pt",
+                    },
+                }),
+                // VTT subtitles
+                (0, storage_1.getStorage)()
+                    .bucket()
+                    .file(`${baseSubtitlesPath}.vtt`)
+                    .save(vtt, {
+                    contentType: "text/vtt",
+                    metadata: {
+                        language: "pt",
+                    },
+                }),
+            ];
+            await Promise.all(uploads);
+            logger.info("✅ Audio translation and subtitle generation complete:", {
                 videoId,
                 portuguesePath: dubbedStoragePath,
+                subtitlePath: baseSubtitlesPath,
             });
             return {
                 success: true,
                 dubbedPath: dubbedStoragePath,
+                subtitlesPath: baseSubtitlesPath,
             };
         }
         finally {
             // Clean up temp files
-            for (const [label, path] of [
-                ["MP3", tempMp3Path],
-                ["Dubbed", tempDubbedPath],
-            ]) {
-                if (path) {
-                    try {
-                        await fs.promises.unlink(path);
-                        logger.info(`✅ Cleaned up temp ${label} file:`, { path });
-                    }
-                    catch (cleanupError) {
-                        logger.warn(`⚠️ Failed to clean up temp ${label} file:`, {
-                            path,
-                            error: cleanupError,
-                        });
-                    }
+            if (tempMp3Path) {
+                try {
+                    await fs.promises.unlink(tempMp3Path);
+                    logger.info("✅ Cleaned up temp MP3 file:", { path: tempMp3Path });
+                }
+                catch (cleanupError) {
+                    logger.warn("⚠️ Failed to clean up temp MP3 file:", {
+                        path: tempMp3Path,
+                        error: cleanupError,
+                    });
                 }
             }
         }

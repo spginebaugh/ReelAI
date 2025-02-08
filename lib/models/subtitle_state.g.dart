@@ -28,6 +28,11 @@ _$SubtitleStateImpl _$$SubtitleStateImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       currentText: json['currentText'] as String?,
+      availableLanguages: (json['availableLanguages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      currentLanguage: json['currentLanguage'] as String? ?? 'english',
     );
 
 Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
@@ -35,4 +40,6 @@ Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
       'isEnabled': instance.isEnabled,
       'entries': instance.entries,
       'currentText': instance.currentText,
+      'availableLanguages': instance.availableLanguages,
+      'currentLanguage': instance.currentLanguage,
     };

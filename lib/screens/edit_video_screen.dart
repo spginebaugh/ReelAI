@@ -18,6 +18,7 @@ import '../state/audio_language_provider.dart';
 import '../state/audio_player_provider.dart';
 import '../models/subtitle_state.dart';
 import '../state/subtitle_controller.dart';
+import '../state/auth_provider.dart';
 
 class EditVideoScreen extends ConsumerStatefulWidget {
   final Video video;
@@ -315,8 +316,11 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                                 builder: (context, ref, _) {
                                   final subtitleState =
                                       ref.watch(subtitleControllerProvider);
+                                  final user = ref
+                                      .watch(authStateProvider)
+                                      .requireValue!;
 
-                                  return IconButton(
+                                  return PopupMenuButton<String?>(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     icon: Icon(
@@ -327,78 +331,96 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                                               .primary
                                           : null,
                                     ),
-                                    onPressed: () {
-                                      final RenderBox button = context
-                                          .findRenderObject() as RenderBox;
-                                      final RenderBox overlay =
-                                          Navigator.of(context)
-                                              .overlay!
-                                              .context
-                                              .findRenderObject() as RenderBox;
-                                      final position = RelativeRect.fromRect(
-                                        Rect.fromPoints(
-                                          button.localToGlobal(Offset.zero,
-                                              ancestor: overlay),
-                                          button.localToGlobal(
-                                              button.size
-                                                  .bottomRight(Offset.zero),
-                                              ancestor: overlay),
-                                        ),
-                                        Offset.zero & overlay.size,
-                                      );
-
-                                      showMenu<bool>(
-                                        context: context,
-                                        position: position,
-                                        items: [
-                                          PopupMenuItem<bool>(
-                                            value: false,
-                                            child: Row(
-                                              children: [
-                                                if (!subtitleState.isEnabled)
-                                                  Icon(
-                                                    Icons.check,
-                                                    size: 18,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .primary,
-                                                  )
-                                                else
-                                                  const SizedBox(width: 18),
-                                                const SizedBox(width: 8),
-                                                const Text('Off'),
-                                              ],
-                                            ),
-                                          ),
-                                          PopupMenuItem<bool>(
-                                            value: true,
-                                            child: Row(
-                                              children: [
-                                                if (subtitleState.isEnabled)
-                                                  Icon(
-                                                    Icons.check,
-                                                    size: 18,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .primary,
-                                                  )
-                                                else
-                                                  const SizedBox(width: 18),
-                                                const SizedBox(width: 8),
-                                                const Text('English'),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ).then((enabled) {
-                                        if (enabled != null) {
+                                    onSelected: (language) async {
+                                      if (language == null) {
+                                        // Off selected
+                                        if (subtitleState.isEnabled) {
                                           ref
                                               .read(subtitleControllerProvider
                                                   .notifier)
                                               .toggleSubtitles();
                                         }
-                                      });
+                                      } else {
+                                        // Language selected
+                                        if (!subtitleState.isEnabled) {
+                                          ref
+                                              .read(subtitleControllerProvider
+                                                  .notifier)
+                                              .toggleSubtitles();
+                                        }
+                                        // Switch to selected language
+                                        try {
+                                          await ref
+                                              .read(subtitleControllerProvider
+                                                  .notifier)
+                                              .switchLanguage(
+                                                widget.video.id,
+                                                user.uid,
+                                                language,
+                                              );
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    'Failed to switch subtitle language: $e'),
+                                                backgroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .error,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      }
                                     },
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem<String?>(
+                                        value: null,
+                                        child: Row(
+                                          children: [
+                                            if (!subtitleState.isEnabled)
+                                              Icon(
+                                                Icons.check,
+                                                size: 18,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              )
+                                            else
+                                              const SizedBox(width: 18),
+                                            const SizedBox(width: 8),
+                                            const Text('Off'),
+                                          ],
+                                        ),
+                                      ),
+                                      ...subtitleState.availableLanguages.map(
+                                        (lang) => PopupMenuItem<String?>(
+                                          value: lang,
+                                          child: Row(
+                                            children: [
+                                              if (subtitleState.isEnabled &&
+                                                  subtitleState
+                                                          .currentLanguage ==
+                                                      lang)
+                                                Icon(
+                                                  Icons.check,
+                                                  size: 18,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                )
+                                              else
+                                                const SizedBox(width: 18),
+                                              const SizedBox(width: 8),
+                                              Text(_getLanguageDisplayName(
+                                                  lang)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               ),

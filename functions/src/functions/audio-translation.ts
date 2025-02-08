@@ -5,7 +5,12 @@ import * as os from "os";
 import * as path from "path";
 import {onCall} from "firebase-functions/v2/https";
 import {getStorage} from "firebase-admin/storage";
-import {dubAudio, elevenLabsApiKey} from "../services/elevenlabs";
+import {
+  dubAudio,
+  getSubtitlesForDubbing,
+  elevenLabsApiKey,
+} from "../services/elevenlabs";
+import {validateSubtitleFormat} from "../services/subtitle-converter";
 
 // Using v2 functions with correct auth setup
 export const generateTranslation = onCall(
@@ -58,7 +63,6 @@ export const generateTranslation = onCall(
         "audio_english.mp3",
       ].join("/");
       let tempMp3Path: string | undefined;
-      let tempDubbedPath: string | undefined;
 
       try {
         // Download the existing MP3 file
@@ -74,54 +78,95 @@ export const generateTranslation = onCall(
 
         // Dub the audio to Portuguese
         logger.info("🎙️ Starting Portuguese dubbing process");
-        const dubbedAudio = await dubAudio(tempMp3Path, "pt");
-
-        // Save dubbed audio to temp file
-        tempDubbedPath = path.join(os.tmpdir(), `${videoId}_pt.mp3`);
-        logger.info("💾 Saving dubbed audio to temp file:", {
-          path: tempDubbedPath,
-        });
-        await fs.promises.writeFile(tempDubbedPath, dubbedAudio);
+        const {
+          audio: dubbedAudio,
+          dubbingId,
+        } = await dubAudio(tempMp3Path, "pt");
 
         // Upload dubbed MP3 to Firebase Storage
-        const dubbedStoragePath =
-          `${videoData.uploaderId}/${videoId}/audio/audio_portuguese.mp3`;
+        const dubbedStoragePath = [
+          videoData.uploaderId,
+          videoId,
+          "audio",
+          "audio_portuguese.mp3",
+        ].join("/");
+
         logger.info("📤 Uploading Portuguese audio to storage:", {
           path: dubbedStoragePath,
         });
 
-        await getStorage().bucket().upload(tempDubbedPath, {
-          destination: dubbedStoragePath,
-          metadata: {
-            contentType: "audio/mp3",
-          },
+        await getStorage().bucket().file(dubbedStoragePath).save(dubbedAudio, {
+          contentType: "audio/mp3",
         });
 
-        logger.info("✅ Audio translation complete:", {
+        // Get subtitles for the dubbed audio
+        logger.info("📝 Getting Portuguese subtitles...");
+        const {srt, vtt} = await getSubtitlesForDubbing(dubbingId, "pt");
+
+        // Validate subtitle formats
+        if (!validateSubtitleFormat(srt, "srt")) {
+          throw new Error("Generated SRT content failed validation");
+        }
+        if (!validateSubtitleFormat(vtt, "vtt")) {
+          throw new Error("Generated VTT content failed validation");
+        }
+
+        // Calculate the base subtitles path
+        const baseSubtitlesPath = [
+          videoData.uploaderId,
+          videoId,
+          "subtitles",
+          "subtitles_portuguese",
+        ].join("/");
+
+        // Upload all subtitle formats
+        const uploads = [
+          // SRT subtitles
+          getStorage()
+            .bucket()
+            .file(`${baseSubtitlesPath}.srt`)
+            .save(srt, {
+              contentType: "text/plain",
+              metadata: {
+                language: "pt",
+              },
+            }),
+          // VTT subtitles
+          getStorage()
+            .bucket()
+            .file(`${baseSubtitlesPath}.vtt`)
+            .save(vtt, {
+              contentType: "text/vtt",
+              metadata: {
+                language: "pt",
+              },
+            }),
+        ];
+
+        await Promise.all(uploads);
+
+        logger.info("✅ Audio translation and subtitle generation complete:", {
           videoId,
           portuguesePath: dubbedStoragePath,
+          subtitlePath: baseSubtitlesPath,
         });
 
         return {
           success: true,
           dubbedPath: dubbedStoragePath,
+          subtitlesPath: baseSubtitlesPath,
         };
       } finally {
         // Clean up temp files
-        for (const [label, path] of [
-          ["MP3", tempMp3Path],
-          ["Dubbed", tempDubbedPath],
-        ]) {
-          if (path) {
-            try {
-              await fs.promises.unlink(path);
-              logger.info(`✅ Cleaned up temp ${label} file:`, {path});
-            } catch (cleanupError) {
-              logger.warn(`⚠️ Failed to clean up temp ${label} file:`, {
-                path,
-                error: cleanupError,
-              });
-            }
+        if (tempMp3Path) {
+          try {
+            await fs.promises.unlink(tempMp3Path);
+            logger.info("✅ Cleaned up temp MP3 file:", {path: tempMp3Path});
+          } catch (cleanupError) {
+            logger.warn("⚠️ Failed to clean up temp MP3 file:", {
+              path: tempMp3Path,
+              error: cleanupError,
+            });
           }
         }
       }

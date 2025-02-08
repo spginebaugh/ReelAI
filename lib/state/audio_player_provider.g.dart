@@ -7,7 +7,7 @@ part of 'audio_player_provider.dart';
 // **************************************************************************
 
 String _$audioPlayerControllerHash() =>
-    r'9fea2d14f497f890a90199919f40cdb258555424';
+    r'492ea4e7c678f29ef622eb6ca5129c641e68eca1';
 
 /// Provider that manages audio playback and synchronization with video
 ///

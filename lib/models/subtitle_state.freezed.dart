@@ -230,6 +230,8 @@ mixin _$SubtitleState {
   bool get isEnabled => throw _privateConstructorUsedError;
   List<SubtitleEntry> get entries => throw _privateConstructorUsedError;
   String? get currentText => throw _privateConstructorUsedError;
+  List<String> get availableLanguages => throw _privateConstructorUsedError;
+  String get currentLanguage => throw _privateConstructorUsedError;
 
   /// Serializes this SubtitleState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -247,7 +249,12 @@ abstract class $SubtitleStateCopyWith<$Res> {
           SubtitleState value, $Res Function(SubtitleState) then) =
       _$SubtitleStateCopyWithImpl<$Res, SubtitleState>;
   @useResult
-  $Res call({bool isEnabled, List<SubtitleEntry> entries, String? currentText});
+  $Res call(
+      {bool isEnabled,
+      List<SubtitleEntry> entries,
+      String? currentText,
+      List<String> availableLanguages,
+      String currentLanguage});
 }
 
 /// @nodoc
@@ -268,6 +275,8 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
     Object? isEnabled = null,
     Object? entries = null,
     Object? currentText = freezed,
+    Object? availableLanguages = null,
+    Object? currentLanguage = null,
   }) {
     return _then(_value.copyWith(
       isEnabled: null == isEnabled
@@ -282,6 +291,14 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
           ? _value.currentText
           : currentText // ignore: cast_nullable_to_non_nullable
               as String?,
+      availableLanguages: null == availableLanguages
+          ? _value.availableLanguages
+          : availableLanguages // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      currentLanguage: null == currentLanguage
+          ? _value.currentLanguage
+          : currentLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -294,7 +311,12 @@ abstract class _$$SubtitleStateImplCopyWith<$Res>
       __$$SubtitleStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({bool isEnabled, List<SubtitleEntry> entries, String? currentText});
+  $Res call(
+      {bool isEnabled,
+      List<SubtitleEntry> entries,
+      String? currentText,
+      List<String> availableLanguages,
+      String currentLanguage});
 }
 
 /// @nodoc
@@ -313,6 +335,8 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
     Object? isEnabled = null,
     Object? entries = null,
     Object? currentText = freezed,
+    Object? availableLanguages = null,
+    Object? currentLanguage = null,
   }) {
     return _then(_$SubtitleStateImpl(
       isEnabled: null == isEnabled
@@ -327,6 +351,14 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
           ? _value.currentText
           : currentText // ignore: cast_nullable_to_non_nullable
               as String?,
+      availableLanguages: null == availableLanguages
+          ? _value._availableLanguages
+          : availableLanguages // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      currentLanguage: null == currentLanguage
+          ? _value.currentLanguage
+          : currentLanguage // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -337,8 +369,11 @@ class _$SubtitleStateImpl implements _SubtitleState {
   const _$SubtitleStateImpl(
       {this.isEnabled = false,
       final List<SubtitleEntry> entries = const [],
-      this.currentText})
-      : _entries = entries;
+      this.currentText,
+      final List<String> availableLanguages = const [],
+      this.currentLanguage = 'english'})
+      : _entries = entries,
+        _availableLanguages = availableLanguages;
 
   factory _$SubtitleStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubtitleStateImplFromJson(json);
@@ -357,10 +392,23 @@ class _$SubtitleStateImpl implements _SubtitleState {
 
   @override
   final String? currentText;
+  final List<String> _availableLanguages;
+  @override
+  @JsonKey()
+  List<String> get availableLanguages {
+    if (_availableLanguages is EqualUnmodifiableListView)
+      return _availableLanguages;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_availableLanguages);
+  }
+
+  @override
+  @JsonKey()
+  final String currentLanguage;
 
   @override
   String toString() {
-    return 'SubtitleState(isEnabled: $isEnabled, entries: $entries, currentText: $currentText)';
+    return 'SubtitleState(isEnabled: $isEnabled, entries: $entries, currentText: $currentText, availableLanguages: $availableLanguages, currentLanguage: $currentLanguage)';
   }
 
   @override
@@ -372,13 +420,22 @@ class _$SubtitleStateImpl implements _SubtitleState {
                 other.isEnabled == isEnabled) &&
             const DeepCollectionEquality().equals(other._entries, _entries) &&
             (identical(other.currentText, currentText) ||
-                other.currentText == currentText));
+                other.currentText == currentText) &&
+            const DeepCollectionEquality()
+                .equals(other._availableLanguages, _availableLanguages) &&
+            (identical(other.currentLanguage, currentLanguage) ||
+                other.currentLanguage == currentLanguage));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, isEnabled,
-      const DeepCollectionEquality().hash(_entries), currentText);
+  int get hashCode => Object.hash(
+      runtimeType,
+      isEnabled,
+      const DeepCollectionEquality().hash(_entries),
+      currentText,
+      const DeepCollectionEquality().hash(_availableLanguages),
+      currentLanguage);
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.
@@ -400,7 +457,9 @@ abstract class _SubtitleState implements SubtitleState {
   const factory _SubtitleState(
       {final bool isEnabled,
       final List<SubtitleEntry> entries,
-      final String? currentText}) = _$SubtitleStateImpl;
+      final String? currentText,
+      final List<String> availableLanguages,
+      final String currentLanguage}) = _$SubtitleStateImpl;
 
   factory _SubtitleState.fromJson(Map<String, dynamic> json) =
       _$SubtitleStateImpl.fromJson;
@@ -411,6 +470,10 @@ abstract class _SubtitleState implements SubtitleState {
   List<SubtitleEntry> get entries;
   @override
   String? get currentText;
+  @override
+  List<String> get availableLanguages;
+  @override
+  String get currentLanguage;
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.

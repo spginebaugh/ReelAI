@@ -7,7 +7,7 @@ part of 'subtitle_controller.dart';
 // **************************************************************************
 
 String _$subtitleControllerHash() =>
-    r'1fd6adcd763371fa9dec45a21ed46976be233c2a';
+    r'769ae38522e770baadd85198025ca5f3621a69b0';
 
 /// See also [SubtitleController].
 @ProviderFor(SubtitleController)
