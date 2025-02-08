@@ -295,23 +295,28 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                     enabled: !isLoading.value,
                   ),
                   const SizedBox(height: 16),
-                  FilledButton.tonalIcon(
-                    onPressed:
-                        isGeneratingSubtitles.value ? null : generateSubtitles,
-                    icon: isGeneratingSubtitles.value
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.subtitles),
-                    label: Text(
-                      isGeneratingSubtitles.value
-                          ? 'Generating Subtitles...'
-                          : 'Translate Audio',
-                    ),
+                  Column(
+                    children: [
+                      FilledButton.icon(
+                        onPressed: isGeneratingSubtitles.value
+                            ? null
+                            : () => generateSubtitles(),
+                        icon: isGeneratingSubtitles.value
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.subtitles),
+                        label: Text(
+                          isGeneratingSubtitles.value
+                              ? 'Generating Subtitles...'
+                              : 'Translate Audio',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

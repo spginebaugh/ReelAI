@@ -7,6 +7,8 @@ import '../models/video.dart';
 import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
 import '../services/video_processing_service.dart';
+import 'audio_player_provider.dart';
+import 'package:flutter/foundation.dart';
 
 part 'video_edit_provider.g.dart';
 
@@ -27,6 +29,7 @@ class VideoEditController extends _$VideoEditController {
         ]);
       });
       _videoService.dispose();
+      ref.read(audioPlayerControllerProvider.notifier).dispose();
     });
 
     return VideoEditState.initial();
@@ -38,16 +41,54 @@ class VideoEditController extends _$VideoEditController {
     state = const AsyncValue.loading();
 
     try {
+      debugPrint('🎥 VideoEdit: Starting video initialization');
+
       // Download and save the original video
       final tempFile = await _videoService.downloadVideo(video.videoUrl);
+      debugPrint('🎥 VideoEdit: Video downloaded to temp file');
 
-      // Initialize video player
-      final videoPlayerController = VideoPlayerController.file(tempFile);
+      // Initialize video player with completely disabled audio
+      debugPrint('🎥 VideoEdit: Creating video player with disabled audio');
+      final videoPlayerController = VideoPlayerController.file(
+        tempFile,
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true, // Allow mixing with our audio track
+        ),
+      );
+
+      // Initialize and ensure audio is disabled
+      debugPrint('🎥 VideoEdit: Initializing video player');
       await videoPlayerController.initialize();
+      debugPrint('🎥 VideoEdit: Setting volume to 0');
+      await videoPlayerController.setVolume(0);
 
-      final chewieController = await _videoService.initializePlayer(tempFile);
+      // Double-check volume is 0
+      if (videoPlayerController.value.volume > 0) {
+        debugPrint(
+            '⚠️ VideoEdit: Volume not 0 after initialization, forcing mute');
+        await videoPlayerController.setVolume(0);
+        // Verify mute worked
+        if (videoPlayerController.value.volume > 0) {
+          throw Exception('Failed to mute video player');
+        }
+      }
+
+      debugPrint('🎥 VideoEdit: Creating Chewie controller with muted audio');
+      final chewieController = ChewieController(
+        videoPlayerController: videoPlayerController,
+        autoPlay: false,
+        allowMuting: false, // Prevent user from unmuting
+        showControls: true,
+        showOptions: false, // Hide additional options
+        showControlsOnInitialize: false,
+        isLive: false,
+        allowFullScreen: true,
+      );
+
       final duration = await _videoService.getVideoDuration(tempFile);
+      debugPrint('🎥 VideoEdit: Controllers initialized');
 
+      // First update state with the initialized video controllers
       state = AsyncValue.data(
         VideoEditState(
           isProcessing: false,
@@ -66,7 +107,46 @@ class VideoEditController extends _$VideoEditController {
           chewieController: chewieController,
         ),
       );
+      debugPrint('🎥 VideoEdit: State updated with initialized controllers');
+
+      // Verify volume is still 0 after state update
+      if (videoPlayerController.value.volume > 0) {
+        debugPrint(
+            '⚠️ VideoEdit: Volume changed after state update, re-muting');
+        await videoPlayerController.setVolume(0);
+      }
+
+      // Now initialize the audio player with the initialized video controller
+      debugPrint('🎥 VideoEdit: Initializing audio player');
+      try {
+        await ref
+            .read(audioPlayerControllerProvider.notifier)
+            .initialize(videoPlayerController);
+        debugPrint('🎥 VideoEdit: Audio player initialized');
+
+        // Set up the initial Portuguese audio
+        debugPrint('🎥 VideoEdit: Setting initial Portuguese audio');
+        await ref
+            .read(audioPlayerControllerProvider.notifier)
+            .switchLanguage(video.id, 'portuguese');
+        debugPrint('✅ VideoEdit: Video initialization complete');
+
+        // Final volume check
+        if (videoPlayerController.value.volume > 0) {
+          debugPrint(
+              '⚠️ VideoEdit: Volume changed after audio setup, re-muting');
+          await videoPlayerController.setVolume(0);
+        }
+      } catch (audioError) {
+        debugPrint('❌ VideoEdit: Audio initialization failed: $audioError');
+        debugPrint('Stack trace:');
+        debugPrint(StackTrace.current.toString());
+        // Don't swallow audio errors anymore - they're important for debugging
+        rethrow;
+      }
     } catch (e, st) {
+      debugPrint('❌ VideoEdit: Initialization failed: $e');
+      debugPrint(st.toString());
       state = AsyncValue.error(e, st);
     }
   }
@@ -100,14 +180,50 @@ class VideoEditController extends _$VideoEditController {
       // Clean up previous preview file
       await _videoService.cleanup([currentState.currentPreviewPath]);
 
-      final newChewieController =
-          await _videoService.initializePlayer(File(filteredPath));
+      // Initialize new video controller
+      final videoPlayerController = VideoPlayerController.file(
+        File(filteredPath),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true, // Allow mixing with our audio track
+        ),
+      );
+
+      // Initialize and verify muted
+      await videoPlayerController.initialize();
+      await videoPlayerController.setVolume(0);
+      if (videoPlayerController.value.volume > 0) {
+        debugPrint('⚠️ VideoEdit: New filtered video not muted, forcing mute');
+        await videoPlayerController.setVolume(0);
+        if (videoPlayerController.value.volume > 0) {
+          throw Exception('Failed to mute filtered video');
+        }
+      }
+
+      // Create new Chewie controller with muted settings
+      final newChewieController = ChewieController(
+        videoPlayerController: videoPlayerController,
+        autoPlay: false,
+        allowMuting: false,
+        showControls: true,
+        showOptions: false,
+        showControlsOnInitialize: false,
+        isLive: false,
+        allowFullScreen: true,
+      );
 
       state = AsyncValue.data(currentState.copyWith(
         currentPreviewPath: filteredPath,
         isProcessing: false,
+        videoPlayerController: videoPlayerController,
         chewieController: newChewieController,
       ));
+
+      // Verify volume is still 0 after state update
+      if (videoPlayerController.value.volume > 0) {
+        debugPrint(
+            '⚠️ VideoEdit: Volume changed after filter update, re-muting');
+        await videoPlayerController.setVolume(0);
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -133,10 +249,36 @@ class VideoEditController extends _$VideoEditController {
       if (outputPath != null) {
         // Initialize new controllers with the trimmed video
         final trimmedFile = File(outputPath);
-        final videoPlayerController = VideoPlayerController.file(trimmedFile);
+        final videoPlayerController = VideoPlayerController.file(
+          trimmedFile,
+          videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: true, // Allow mixing with our audio track
+          ),
+        );
+
+        // Initialize and verify muted
         await videoPlayerController.initialize();
-        final chewieController =
-            await _videoService.initializePlayer(trimmedFile);
+        await videoPlayerController.setVolume(0);
+        if (videoPlayerController.value.volume > 0) {
+          debugPrint('⚠️ VideoEdit: New trimmed video not muted, forcing mute');
+          await videoPlayerController.setVolume(0);
+          if (videoPlayerController.value.volume > 0) {
+            throw Exception('Failed to mute trimmed video');
+          }
+        }
+
+        // Create new Chewie controller with muted settings
+        final chewieController = ChewieController(
+          videoPlayerController: videoPlayerController,
+          autoPlay: false,
+          allowMuting: false,
+          showControls: true,
+          showOptions: false,
+          showControlsOnInitialize: false,
+          isLive: false,
+          allowFullScreen: true,
+        );
+
         final duration = await _videoService.getVideoDuration(trimmedFile);
 
         // Clean up the old temp file
@@ -152,6 +294,13 @@ class VideoEditController extends _$VideoEditController {
           endValue: duration,
           currentMode: EditingMode.none,
         ));
+
+        // Verify volume is still 0 after state update
+        if (videoPlayerController.value.volume > 0) {
+          debugPrint(
+              '⚠️ VideoEdit: Volume changed after trim update, re-muting');
+          await videoPlayerController.setVolume(0);
+        }
       }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -187,5 +336,31 @@ class VideoEditController extends _$VideoEditController {
     state.whenData((currentState) {
       state = AsyncValue.data(currentState.copyWith(brightness: value));
     });
+  }
+
+  /// Test function to mute all audio sources
+  Future<void> muteAllAudio() async {
+    debugPrint('🔇 VideoEdit: Muting all audio sources');
+
+    final currentState = state.value;
+    if (currentState == null) return;
+
+    // Mute video player
+    if (currentState.videoPlayerController != null) {
+      debugPrint('🔇 VideoEdit: Muting video player');
+      await currentState.videoPlayerController!.setVolume(0);
+    }
+
+    // Mute chewie controller
+    if (currentState.chewieController != null) {
+      debugPrint('🔇 VideoEdit: Muting chewie controller');
+      currentState.chewieController!.setVolume(0);
+    }
+
+    // Mute audio player
+    debugPrint('🔇 VideoEdit: Muting audio player via provider');
+    await ref.read(audioPlayerControllerProvider.notifier).muteEverything();
+
+    debugPrint('🔇 VideoEdit: All audio sources should now be muted');
   }
 }
