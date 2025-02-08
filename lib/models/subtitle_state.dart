@@ -26,6 +26,11 @@ class SubtitleState with _$SubtitleState {
     String? currentText,
     @Default([]) List<String> availableLanguages,
     @Default('english') String currentLanguage,
+    @Default(false) bool isInitialized,
+    @Default(false) bool isLoading,
+    @Default(false) bool isSwitching,
+    @Default(false) bool hasError,
+    String? errorMessage,
   }) = _SubtitleState;
 
   factory SubtitleState.fromJson(Map<String, dynamic> json) =>

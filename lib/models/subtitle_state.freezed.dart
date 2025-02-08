@@ -232,6 +232,11 @@ mixin _$SubtitleState {
   String? get currentText => throw _privateConstructorUsedError;
   List<String> get availableLanguages => throw _privateConstructorUsedError;
   String get currentLanguage => throw _privateConstructorUsedError;
+  bool get isInitialized => throw _privateConstructorUsedError;
+  bool get isLoading => throw _privateConstructorUsedError;
+  bool get isSwitching => throw _privateConstructorUsedError;
+  bool get hasError => throw _privateConstructorUsedError;
+  String? get errorMessage => throw _privateConstructorUsedError;
 
   /// Serializes this SubtitleState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -254,7 +259,12 @@ abstract class $SubtitleStateCopyWith<$Res> {
       List<SubtitleEntry> entries,
       String? currentText,
       List<String> availableLanguages,
-      String currentLanguage});
+      String currentLanguage,
+      bool isInitialized,
+      bool isLoading,
+      bool isSwitching,
+      bool hasError,
+      String? errorMessage});
 }
 
 /// @nodoc
@@ -277,6 +287,11 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
     Object? currentText = freezed,
     Object? availableLanguages = null,
     Object? currentLanguage = null,
+    Object? isInitialized = null,
+    Object? isLoading = null,
+    Object? isSwitching = null,
+    Object? hasError = null,
+    Object? errorMessage = freezed,
   }) {
     return _then(_value.copyWith(
       isEnabled: null == isEnabled
@@ -299,6 +314,26 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
           ? _value.currentLanguage
           : currentLanguage // ignore: cast_nullable_to_non_nullable
               as String,
+      isInitialized: null == isInitialized
+          ? _value.isInitialized
+          : isInitialized // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isSwitching: null == isSwitching
+          ? _value.isSwitching
+          : isSwitching // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasError: null == hasError
+          ? _value.hasError
+          : hasError // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -316,7 +351,12 @@ abstract class _$$SubtitleStateImplCopyWith<$Res>
       List<SubtitleEntry> entries,
       String? currentText,
       List<String> availableLanguages,
-      String currentLanguage});
+      String currentLanguage,
+      bool isInitialized,
+      bool isLoading,
+      bool isSwitching,
+      bool hasError,
+      String? errorMessage});
 }
 
 /// @nodoc
@@ -337,6 +377,11 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
     Object? currentText = freezed,
     Object? availableLanguages = null,
     Object? currentLanguage = null,
+    Object? isInitialized = null,
+    Object? isLoading = null,
+    Object? isSwitching = null,
+    Object? hasError = null,
+    Object? errorMessage = freezed,
   }) {
     return _then(_$SubtitleStateImpl(
       isEnabled: null == isEnabled
@@ -359,6 +404,26 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
           ? _value.currentLanguage
           : currentLanguage // ignore: cast_nullable_to_non_nullable
               as String,
+      isInitialized: null == isInitialized
+          ? _value.isInitialized
+          : isInitialized // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isSwitching: null == isSwitching
+          ? _value.isSwitching
+          : isSwitching // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasError: null == hasError
+          ? _value.hasError
+          : hasError // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -371,7 +436,12 @@ class _$SubtitleStateImpl implements _SubtitleState {
       final List<SubtitleEntry> entries = const [],
       this.currentText,
       final List<String> availableLanguages = const [],
-      this.currentLanguage = 'english'})
+      this.currentLanguage = 'english',
+      this.isInitialized = false,
+      this.isLoading = false,
+      this.isSwitching = false,
+      this.hasError = false,
+      this.errorMessage})
       : _entries = entries,
         _availableLanguages = availableLanguages;
 
@@ -405,10 +475,24 @@ class _$SubtitleStateImpl implements _SubtitleState {
   @override
   @JsonKey()
   final String currentLanguage;
+  @override
+  @JsonKey()
+  final bool isInitialized;
+  @override
+  @JsonKey()
+  final bool isLoading;
+  @override
+  @JsonKey()
+  final bool isSwitching;
+  @override
+  @JsonKey()
+  final bool hasError;
+  @override
+  final String? errorMessage;
 
   @override
   String toString() {
-    return 'SubtitleState(isEnabled: $isEnabled, entries: $entries, currentText: $currentText, availableLanguages: $availableLanguages, currentLanguage: $currentLanguage)';
+    return 'SubtitleState(isEnabled: $isEnabled, entries: $entries, currentText: $currentText, availableLanguages: $availableLanguages, currentLanguage: $currentLanguage, isInitialized: $isInitialized, isLoading: $isLoading, isSwitching: $isSwitching, hasError: $hasError, errorMessage: $errorMessage)';
   }
 
   @override
@@ -424,7 +508,17 @@ class _$SubtitleStateImpl implements _SubtitleState {
             const DeepCollectionEquality()
                 .equals(other._availableLanguages, _availableLanguages) &&
             (identical(other.currentLanguage, currentLanguage) ||
-                other.currentLanguage == currentLanguage));
+                other.currentLanguage == currentLanguage) &&
+            (identical(other.isInitialized, isInitialized) ||
+                other.isInitialized == isInitialized) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading) &&
+            (identical(other.isSwitching, isSwitching) ||
+                other.isSwitching == isSwitching) &&
+            (identical(other.hasError, hasError) ||
+                other.hasError == hasError) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -435,7 +529,12 @@ class _$SubtitleStateImpl implements _SubtitleState {
       const DeepCollectionEquality().hash(_entries),
       currentText,
       const DeepCollectionEquality().hash(_availableLanguages),
-      currentLanguage);
+      currentLanguage,
+      isInitialized,
+      isLoading,
+      isSwitching,
+      hasError,
+      errorMessage);
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.
@@ -459,7 +558,12 @@ abstract class _SubtitleState implements SubtitleState {
       final List<SubtitleEntry> entries,
       final String? currentText,
       final List<String> availableLanguages,
-      final String currentLanguage}) = _$SubtitleStateImpl;
+      final String currentLanguage,
+      final bool isInitialized,
+      final bool isLoading,
+      final bool isSwitching,
+      final bool hasError,
+      final String? errorMessage}) = _$SubtitleStateImpl;
 
   factory _SubtitleState.fromJson(Map<String, dynamic> json) =
       _$SubtitleStateImpl.fromJson;
@@ -474,6 +578,16 @@ abstract class _SubtitleState implements SubtitleState {
   List<String> get availableLanguages;
   @override
   String get currentLanguage;
+  @override
+  bool get isInitialized;
+  @override
+  bool get isLoading;
+  @override
+  bool get isSwitching;
+  @override
+  bool get hasError;
+  @override
+  String? get errorMessage;
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.

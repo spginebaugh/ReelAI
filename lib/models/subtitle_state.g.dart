@@ -33,6 +33,11 @@ _$SubtitleStateImpl _$$SubtitleStateImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       currentLanguage: json['currentLanguage'] as String? ?? 'english',
+      isInitialized: json['isInitialized'] as bool? ?? false,
+      isLoading: json['isLoading'] as bool? ?? false,
+      isSwitching: json['isSwitching'] as bool? ?? false,
+      hasError: json['hasError'] as bool? ?? false,
+      errorMessage: json['errorMessage'] as String?,
     );
 
 Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
@@ -42,4 +47,9 @@ Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
       'currentText': instance.currentText,
       'availableLanguages': instance.availableLanguages,
       'currentLanguage': instance.currentLanguage,
+      'isInitialized': instance.isInitialized,
+      'isLoading': instance.isLoading,
+      'isSwitching': instance.isSwitching,
+      'hasError': instance.hasError,
+      'errorMessage': instance.errorMessage,
     };
