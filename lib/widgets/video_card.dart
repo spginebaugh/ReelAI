@@ -10,34 +10,113 @@ class VideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 4,
-      color: AppColors.lightBackground,
-      shape: Border(
-        bottom: BorderSide(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
           color: AppColors.surfaceColor,
-          width: 1,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.neonBlue.withOpacity(0.2),
+              blurRadius: 12,
+              spreadRadius: 1,
+            ),
+          ],
+          border: Border.all(
+            color: AppColors.neonBlue.withOpacity(0.3),
+            width: 1,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.surfaceColor,
+              AppColors.surfaceColor.withOpacity(0.8),
+            ],
+          ),
         ),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        title: Text(
-          video.title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.surfaceColor,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => context.pushNamed(
+              RouteNames.video,
+              pathParameters: {'id': video.id},
+              extra: video,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.movie_outlined,
+                        color: AppColors.neonPink,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          video.title,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                            shadows: [
+                              Shadow(
+                                color: AppColors.neonPink,
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Uploaded on:',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        video.uploadTime.toLocal().toString().split('.')[0],
+                        style: TextStyle(
+                          color: AppColors.neonBlue,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (video.description?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      video.description ?? '',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
-        ),
-        subtitle: Text(
-          'Uploaded on: ${video.uploadTime.toLocal()}',
-          style: TextStyle(color: AppColors.surfaceColor.withOpacity(0.8)),
-        ),
-        onTap: () => context.pushNamed(
-          RouteNames.video,
-          pathParameters: {'id': video.id},
-          extra: video,
+            ),
+          ),
         ),
       ),
     );

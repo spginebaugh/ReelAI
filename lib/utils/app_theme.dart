@@ -5,15 +5,20 @@ class AppColors {
   // Private constructor to prevent instantiation
   AppColors._();
 
-  static const Color darkBackground = Color(0xFF222831);
-  static const Color surfaceColor = Color(0xFF393E46);
-  static const Color primary = Color(0xFF00ADB5);
-  static const Color lightBackground = Color(0xFFEEEEEE);
+  // Primary synthwave colors
+  static const Color darkBackground = Color(0xFF0B0B1A);
+  static const Color surfaceColor = Color(0xFF1A1A2E);
+  static const Color neonPink = Color(0xFFFF2E97);
+  static const Color neonBlue = Color(0xFF2DE2E6);
+  static const Color neonPurple = Color(0xFF9D4EDD);
+  static const Color retroOrange = Color(0xFFFF9E64);
+  static const Color synthYellow = Color(0xFFFFD93D);
+  static const Color lightBackground = Color(0xFF2A2A3E);
 
   // Additional semantic colors
-  static const Color error = Colors.redAccent;
-  static const Color success = Colors.greenAccent;
-  static const Color warning = Colors.orangeAccent;
+  static const Color error = Color(0xFFFF2E97);
+  static const Color success = Color(0xFF2DE2E6);
+  static const Color warning = Color(0xFFFFD93D);
 }
 
 /// App theme configuration
@@ -21,111 +26,98 @@ class AppTheme {
   // Private constructor to prevent instantiation
   AppTheme._();
 
-  /// Light theme
-  static final ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.light(
-      primary: AppColors.primary,
-      surface: AppColors.surfaceColor,
-      background: AppColors.lightBackground,
-      error: AppColors.error,
-    ),
-    scaffoldBackgroundColor: AppColors.lightBackground,
-    appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.lightBackground,
-      elevation: 0,
-    ),
-    cardTheme: CardTheme(
-      color: AppColors.surfaceColor,
-      elevation: 2,
-    ),
-    textTheme: TextTheme(
-      titleLarge: TextStyle(color: AppColors.darkBackground),
-      titleMedium: TextStyle(color: AppColors.darkBackground),
-      bodyLarge: TextStyle(color: AppColors.darkBackground),
-      bodyMedium: TextStyle(color: AppColors.darkBackground),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surfaceColor.withOpacity(0.1),
-      border: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.primary),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.surfaceColor),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.primary),
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.lightBackground,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    ),
-  );
+  static final ThemeData lightTheme = _createTheme(true);
+  static final ThemeData darkTheme = _createTheme(false);
 
-  /// Dark theme
-  static final ThemeData darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.dark(
-      primary: AppColors.primary,
-      surface: AppColors.surfaceColor,
-      background: AppColors.darkBackground,
-      error: AppColors.error,
-    ),
-    scaffoldBackgroundColor: AppColors.darkBackground,
-    appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.surfaceColor,
-      foregroundColor: AppColors.lightBackground,
-      elevation: 0,
-    ),
-    cardTheme: CardTheme(
-      color: AppColors.surfaceColor,
-      elevation: 2,
-    ),
-    textTheme: TextTheme(
-      titleLarge: TextStyle(color: AppColors.lightBackground),
-      titleMedium: TextStyle(color: AppColors.lightBackground),
-      bodyLarge: TextStyle(color: AppColors.lightBackground),
-      bodyMedium: TextStyle(color: AppColors.lightBackground),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surfaceColor.withOpacity(0.1),
-      border: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.primary),
-        borderRadius: BorderRadius.circular(8),
+  static ThemeData _createTheme(bool isLight) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isLight ? Brightness.light : Brightness.dark,
+      colorScheme: ColorScheme(
+        brightness: isLight ? Brightness.light : Brightness.dark,
+        primary: AppColors.neonPink,
+        secondary: AppColors.neonBlue,
+        tertiary: AppColors.neonPurple,
+        surface: AppColors.surfaceColor,
+        background: AppColors.darkBackground,
+        error: AppColors.error,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: Colors.white,
+        onBackground: Colors.white,
+        onError: Colors.white,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.surfaceColor),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.primary),
-        borderRadius: BorderRadius.circular(8),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.lightBackground,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkBackground,
+        foregroundColor: AppColors.neonPink,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: AppColors.neonPink,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 2,
         ),
       ),
-    ),
-  );
+      cardTheme: CardTheme(
+        color: AppColors.surfaceColor,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: AppColors.neonBlue.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+      ),
+      textTheme: TextTheme(
+        titleLarge: TextStyle(
+          color: AppColors.neonPink,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
+        ),
+        titleMedium: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          letterSpacing: 1,
+        ),
+        bodyLarge: TextStyle(color: Colors.white.withOpacity(0.9)),
+        bodyMedium: TextStyle(color: Colors.white.withOpacity(0.8)),
+      ),
+      iconTheme: IconThemeData(
+        color: AppColors.neonBlue,
+        size: 28,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceColor.withOpacity(0.3),
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.neonPink),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.neonBlue.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.neonPink, width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.neonPink,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          shadowColor: AppColors.neonPink.withOpacity(0.5),
+        ),
+      ),
+    );
+  }
 }
