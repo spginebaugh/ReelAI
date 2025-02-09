@@ -29,6 +29,7 @@ mixin _$VideoEditState {
   double get endValue => throw _privateConstructorUsedError;
   double get brightness => throw _privateConstructorUsedError;
   FilterOption get selectedFilter => throw _privateConstructorUsedError;
+  List<FilterOption> get availableFilters => throw _privateConstructorUsedError;
   @FileConverter()
   File? get tempVideoFile => throw _privateConstructorUsedError;
   String? get currentPreviewPath => throw _privateConstructorUsedError;
@@ -65,6 +66,7 @@ abstract class $VideoEditStateCopyWith<$Res> {
       double endValue,
       double brightness,
       FilterOption selectedFilter,
+      List<FilterOption> availableFilters,
       @FileConverter() File? tempVideoFile,
       String? currentPreviewPath,
       String? processedVideoPath,
@@ -99,6 +101,7 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
     Object? endValue = null,
     Object? brightness = null,
     Object? selectedFilter = null,
+    Object? availableFilters = null,
     Object? tempVideoFile = freezed,
     Object? currentPreviewPath = freezed,
     Object? processedVideoPath = freezed,
@@ -142,6 +145,10 @@ class _$VideoEditStateCopyWithImpl<$Res, $Val extends VideoEditState>
           ? _value.selectedFilter
           : selectedFilter // ignore: cast_nullable_to_non_nullable
               as FilterOption,
+      availableFilters: null == availableFilters
+          ? _value.availableFilters
+          : availableFilters // ignore: cast_nullable_to_non_nullable
+              as List<FilterOption>,
       tempVideoFile: freezed == tempVideoFile
           ? _value.tempVideoFile
           : tempVideoFile // ignore: cast_nullable_to_non_nullable
@@ -194,6 +201,7 @@ abstract class _$$VideoEditStateImplCopyWith<$Res>
       double endValue,
       double brightness,
       FilterOption selectedFilter,
+      List<FilterOption> availableFilters,
       @FileConverter() File? tempVideoFile,
       String? currentPreviewPath,
       String? processedVideoPath,
@@ -227,6 +235,7 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
     Object? endValue = null,
     Object? brightness = null,
     Object? selectedFilter = null,
+    Object? availableFilters = null,
     Object? tempVideoFile = freezed,
     Object? currentPreviewPath = freezed,
     Object? processedVideoPath = freezed,
@@ -270,6 +279,10 @@ class __$$VideoEditStateImplCopyWithImpl<$Res>
           ? _value.selectedFilter
           : selectedFilter // ignore: cast_nullable_to_non_nullable
               as FilterOption,
+      availableFilters: null == availableFilters
+          ? _value._availableFilters
+          : availableFilters // ignore: cast_nullable_to_non_nullable
+              as List<FilterOption>,
       tempVideoFile: freezed == tempVideoFile
           ? _value.tempVideoFile
           : tempVideoFile // ignore: cast_nullable_to_non_nullable
@@ -307,11 +320,13 @@ class _$VideoEditStateImpl implements _VideoEditState {
       required this.endValue,
       required this.brightness,
       required this.selectedFilter,
+      required final List<FilterOption> availableFilters,
       @FileConverter() this.tempVideoFile,
       this.currentPreviewPath,
       this.processedVideoPath,
       @VideoPlayerControllerConverter() this.videoPlayerController,
-      @ChewieControllerConverter() this.chewieController});
+      @ChewieControllerConverter() this.chewieController})
+      : _availableFilters = availableFilters;
 
   factory _$VideoEditStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$VideoEditStateImplFromJson(json);
@@ -334,6 +349,15 @@ class _$VideoEditStateImpl implements _VideoEditState {
   final double brightness;
   @override
   final FilterOption selectedFilter;
+  final List<FilterOption> _availableFilters;
+  @override
+  List<FilterOption> get availableFilters {
+    if (_availableFilters is EqualUnmodifiableListView)
+      return _availableFilters;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_availableFilters);
+  }
+
   @override
   @FileConverter()
   final File? tempVideoFile;
@@ -350,7 +374,7 @@ class _$VideoEditStateImpl implements _VideoEditState {
 
   @override
   String toString() {
-    return 'VideoEditState(isProcessing: $isProcessing, isLoading: $isLoading, isPlaying: $isPlaying, isInitialized: $isInitialized, currentMode: $currentMode, startValue: $startValue, endValue: $endValue, brightness: $brightness, selectedFilter: $selectedFilter, tempVideoFile: $tempVideoFile, currentPreviewPath: $currentPreviewPath, processedVideoPath: $processedVideoPath, videoPlayerController: $videoPlayerController, chewieController: $chewieController)';
+    return 'VideoEditState(isProcessing: $isProcessing, isLoading: $isLoading, isPlaying: $isPlaying, isInitialized: $isInitialized, currentMode: $currentMode, startValue: $startValue, endValue: $endValue, brightness: $brightness, selectedFilter: $selectedFilter, availableFilters: $availableFilters, tempVideoFile: $tempVideoFile, currentPreviewPath: $currentPreviewPath, processedVideoPath: $processedVideoPath, videoPlayerController: $videoPlayerController, chewieController: $chewieController)';
   }
 
   @override
@@ -376,6 +400,8 @@ class _$VideoEditStateImpl implements _VideoEditState {
                 other.brightness == brightness) &&
             (identical(other.selectedFilter, selectedFilter) ||
                 other.selectedFilter == selectedFilter) &&
+            const DeepCollectionEquality()
+                .equals(other._availableFilters, _availableFilters) &&
             (identical(other.tempVideoFile, tempVideoFile) ||
                 other.tempVideoFile == tempVideoFile) &&
             (identical(other.currentPreviewPath, currentPreviewPath) ||
@@ -401,6 +427,7 @@ class _$VideoEditStateImpl implements _VideoEditState {
       endValue,
       brightness,
       selectedFilter,
+      const DeepCollectionEquality().hash(_availableFilters),
       tempVideoFile,
       currentPreviewPath,
       processedVideoPath,
@@ -435,6 +462,7 @@ abstract class _VideoEditState implements VideoEditState {
       required final double endValue,
       required final double brightness,
       required final FilterOption selectedFilter,
+      required final List<FilterOption> availableFilters,
       @FileConverter() final File? tempVideoFile,
       final String? currentPreviewPath,
       final String? processedVideoPath,
@@ -464,6 +492,8 @@ abstract class _VideoEditState implements VideoEditState {
   double get brightness;
   @override
   FilterOption get selectedFilter;
+  @override
+  List<FilterOption> get availableFilters;
   @override
   @FileConverter()
   File? get tempVideoFile;

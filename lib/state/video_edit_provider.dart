@@ -122,6 +122,7 @@ class VideoEditController extends _$VideoEditController {
           endValue: duration,
           brightness: 1.0,
           selectedFilter: FilterOption.none,
+          availableFilters: [FilterOption.none],
           tempVideoFile: tempFile,
           currentPreviewPath: null,
           processedVideoPath: null,
@@ -186,7 +187,10 @@ class VideoEditController extends _$VideoEditController {
 
   void setMode(EditingMode mode) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(currentMode: mode));
+      state = AsyncValue.data(currentState.copyWith(
+        currentMode: mode,
+        availableFilters: currentState.availableFilters,
+      ));
     });
   }
 
@@ -194,7 +198,10 @@ class VideoEditController extends _$VideoEditController {
     final currentState = state.value;
     if (currentState == null || currentState.isProcessing) return;
 
-    state = AsyncValue.data(currentState.copyWith(isProcessing: true));
+    state = AsyncValue.data(currentState.copyWith(
+      isProcessing: true,
+      availableFilters: currentState.availableFilters,
+    ));
 
     try {
       currentState.chewieController?.pause();
@@ -249,6 +256,7 @@ class VideoEditController extends _$VideoEditController {
         isProcessing: false,
         videoPlayerController: videoPlayerController,
         chewieController: newChewieController,
+        availableFilters: currentState.availableFilters,
       ));
 
       // Verify volume is still 0 after state update
@@ -266,7 +274,10 @@ class VideoEditController extends _$VideoEditController {
     final currentState = state.value;
     if (currentState == null || currentState.isProcessing) return;
 
-    state = AsyncValue.data(currentState.copyWith(isProcessing: true));
+    state = AsyncValue.data(currentState.copyWith(
+      isProcessing: true,
+      availableFilters: currentState.availableFilters,
+    ));
 
     try {
       // Dispose of existing controllers
@@ -326,6 +337,7 @@ class VideoEditController extends _$VideoEditController {
           startValue: 0,
           endValue: duration,
           currentMode: EditingMode.none,
+          availableFilters: currentState.availableFilters,
         ));
 
         // Verify volume is still 0 after state update
@@ -342,32 +354,47 @@ class VideoEditController extends _$VideoEditController {
 
   void updateStartValue(double value) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(startValue: value));
+      state = AsyncValue.data(currentState.copyWith(
+        startValue: value,
+        availableFilters: currentState.availableFilters,
+      ));
     });
   }
 
   void updateEndValue(double value) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(endValue: value));
+      state = AsyncValue.data(currentState.copyWith(
+        endValue: value,
+        availableFilters: currentState.availableFilters,
+      ));
     });
   }
 
   void updatePlaybackState(bool isPlaying) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(isPlaying: isPlaying));
+      state = AsyncValue.data(currentState.copyWith(
+        isPlaying: isPlaying,
+        availableFilters: currentState.availableFilters,
+      ));
     });
   }
 
   void updateFilter(FilterOption filter) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(selectedFilter: filter));
+      state = AsyncValue.data(currentState.copyWith(
+        selectedFilter: filter,
+        availableFilters: currentState.availableFilters,
+      ));
       applyFilters();
     });
   }
 
   void updateBrightness(double value) {
     state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(brightness: value));
+      state = AsyncValue.data(currentState.copyWith(
+        brightness: value,
+        availableFilters: currentState.availableFilters,
+      ));
     });
   }
 

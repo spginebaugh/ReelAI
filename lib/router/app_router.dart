@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/video.dart';
 import '../screens/camera_screen.dart';
 import '../screens/edit_video_metadata_screen.dart';
-import '../screens/edit_video_screen.dart';
+import '../screens/edit_video_screen/edit_video_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/my_videos_screen.dart';

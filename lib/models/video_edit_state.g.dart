@@ -18,6 +18,9 @@ _$VideoEditStateImpl _$$VideoEditStateImplFromJson(Map<String, dynamic> json) =>
       brightness: (json['brightness'] as num).toDouble(),
       selectedFilter:
           FilterOption.fromJson(json['selectedFilter'] as Map<String, dynamic>),
+      availableFilters: (json['availableFilters'] as List<dynamic>)
+          .map((e) => FilterOption.fromJson(e as Map<String, dynamic>))
+          .toList(),
       tempVideoFile:
           const FileConverter().fromJson(json['tempVideoFile'] as String?),
       currentPreviewPath: json['currentPreviewPath'] as String?,
@@ -40,6 +43,7 @@ Map<String, dynamic> _$$VideoEditStateImplToJson(
       'endValue': instance.endValue,
       'brightness': instance.brightness,
       'selectedFilter': instance.selectedFilter,
+      'availableFilters': instance.availableFilters,
       'tempVideoFile': const FileConverter().toJson(instance.tempVideoFile),
       'currentPreviewPath': instance.currentPreviewPath,
       'processedVideoPath': instance.processedVideoPath,
