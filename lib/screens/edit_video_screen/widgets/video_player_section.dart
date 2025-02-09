@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../state/subtitle_controller.dart';
+import '../../../widgets/subtitle_display.dart';
 
 class VideoPlayerSection extends ConsumerWidget {
   final ChewieController chewieController;
@@ -22,29 +23,14 @@ class VideoPlayerSection extends ConsumerWidget {
           alignment: Alignment.bottomCenter,
           children: [
             Chewie(controller: chewieController),
-            // Subtitle overlay
+            // Subtitle overlay using our new system
             Consumer(
               builder: (context, ref, _) {
-                final subtitleState = ref.watch(subtitleControllerProvider);
-                if (!subtitleState.isEnabled ||
-                    subtitleState.currentText == null) {
-                  return const SizedBox.shrink();
-                }
-                return Container(
-                  padding: const EdgeInsets.all(8.0),
-                  margin: const EdgeInsets.only(bottom: 48.0),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    subtitleState.currentText!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                final videoSize =
+                    chewieController.videoPlayerController.value.size;
+                return SubtitleDisplay(
+                  videoWidth: videoSize.width,
+                  videoHeight: videoSize.height,
                 );
               },
             ),

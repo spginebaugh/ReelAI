@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../models/video.dart';
 import '../../../../state/subtitle_controller.dart';
-import '../../../../state/auth_provider.dart';
 import '../../../../utils/language_utils.dart';
 
 class SubtitleControls extends ConsumerWidget {
@@ -16,33 +15,27 @@ class SubtitleControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitleState = ref.watch(subtitleControllerProvider);
-    final user = ref.watch(authStateProvider).requireValue!;
+    final subtitleController = ref.watch(subtitleControllerProvider.notifier);
 
     return PopupMenuButton<String?>(
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
       icon: Icon(
         Icons.closed_caption,
-        color: subtitleState.isEnabled
+        color: subtitleState.isVisible
             ? Theme.of(context).colorScheme.primary
             : null,
       ),
       onSelected: (language) async {
         if (language == null) {
-          // Off selected
-          if (subtitleState.isEnabled) {
-            ref.read(subtitleControllerProvider.notifier).toggleSubtitles();
-          }
+          // Toggle visibility
+          ref.read(subtitleControllerProvider.notifier).toggleVisibility();
         } else {
-          // Language selected
-          if (!subtitleState.isEnabled) {
-            ref.read(subtitleControllerProvider.notifier).toggleSubtitles();
-          }
-          // Switch to selected language
+          // Switch language
           try {
             await ref
                 .read(subtitleControllerProvider.notifier)
-                .switchLanguage(video.id, user.uid, language);
+                .loadLanguage(video.id, language);
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -56,11 +49,12 @@ class SubtitleControls extends ConsumerWidget {
         }
       },
       itemBuilder: (context) => [
+        // Toggle visibility option
         PopupMenuItem<String?>(
           value: null,
           child: Row(
             children: [
-              if (!subtitleState.isEnabled)
+              if (!subtitleState.isVisible)
                 Icon(
                   Icons.check,
                   size: 18,
@@ -69,17 +63,17 @@ class SubtitleControls extends ConsumerWidget {
               else
                 const SizedBox(width: 18),
               const SizedBox(width: 8),
-              const Text('Off'),
+              const Text('Hide Subtitles'),
             ],
           ),
         ),
-        ...subtitleState.availableLanguages.map(
+        // Language options
+        ...subtitleController.availableLanguages.map(
           (lang) => PopupMenuItem<String?>(
             value: lang,
             child: Row(
               children: [
-                if (subtitleState.isEnabled &&
-                    subtitleState.currentLanguage == lang)
+                if (subtitleState.isVisible && subtitleState.language == lang)
                   Icon(
                     Icons.check,
                     size: 18,

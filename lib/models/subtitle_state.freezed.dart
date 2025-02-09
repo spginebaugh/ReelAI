@@ -227,16 +227,12 @@ SubtitleState _$SubtitleStateFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SubtitleState {
-  bool get isEnabled => throw _privateConstructorUsedError;
-  List<SubtitleEntry> get entries => throw _privateConstructorUsedError;
-  String? get currentText => throw _privateConstructorUsedError;
-  List<String> get availableLanguages => throw _privateConstructorUsedError;
-  String get currentLanguage => throw _privateConstructorUsedError;
-  bool get isInitialized => throw _privateConstructorUsedError;
-  bool get isLoading => throw _privateConstructorUsedError;
-  bool get isSwitching => throw _privateConstructorUsedError;
-  bool get hasError => throw _privateConstructorUsedError;
-  String? get errorMessage => throw _privateConstructorUsedError;
+  List<SubtitleCue> get subtitles => throw _privateConstructorUsedError;
+  SubtitleCue? get currentCue => throw _privateConstructorUsedError;
+  String get language => throw _privateConstructorUsedError;
+  bool get isVisible => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  TextStyle? get style => throw _privateConstructorUsedError;
 
   /// Serializes this SubtitleState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -255,16 +251,13 @@ abstract class $SubtitleStateCopyWith<$Res> {
       _$SubtitleStateCopyWithImpl<$Res, SubtitleState>;
   @useResult
   $Res call(
-      {bool isEnabled,
-      List<SubtitleEntry> entries,
-      String? currentText,
-      List<String> availableLanguages,
-      String currentLanguage,
-      bool isInitialized,
-      bool isLoading,
-      bool isSwitching,
-      bool hasError,
-      String? errorMessage});
+      {List<SubtitleCue> subtitles,
+      SubtitleCue? currentCue,
+      String language,
+      bool isVisible,
+      @JsonKey(ignore: true) TextStyle? style});
+
+  $SubtitleCueCopyWith<$Res>? get currentCue;
 }
 
 /// @nodoc
@@ -282,59 +275,48 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? isEnabled = null,
-    Object? entries = null,
-    Object? currentText = freezed,
-    Object? availableLanguages = null,
-    Object? currentLanguage = null,
-    Object? isInitialized = null,
-    Object? isLoading = null,
-    Object? isSwitching = null,
-    Object? hasError = null,
-    Object? errorMessage = freezed,
+    Object? subtitles = null,
+    Object? currentCue = freezed,
+    Object? language = null,
+    Object? isVisible = null,
+    Object? style = freezed,
   }) {
     return _then(_value.copyWith(
-      isEnabled: null == isEnabled
-          ? _value.isEnabled
-          : isEnabled // ignore: cast_nullable_to_non_nullable
-              as bool,
-      entries: null == entries
-          ? _value.entries
-          : entries // ignore: cast_nullable_to_non_nullable
-              as List<SubtitleEntry>,
-      currentText: freezed == currentText
-          ? _value.currentText
-          : currentText // ignore: cast_nullable_to_non_nullable
-              as String?,
-      availableLanguages: null == availableLanguages
-          ? _value.availableLanguages
-          : availableLanguages // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      currentLanguage: null == currentLanguage
-          ? _value.currentLanguage
-          : currentLanguage // ignore: cast_nullable_to_non_nullable
+      subtitles: null == subtitles
+          ? _value.subtitles
+          : subtitles // ignore: cast_nullable_to_non_nullable
+              as List<SubtitleCue>,
+      currentCue: freezed == currentCue
+          ? _value.currentCue
+          : currentCue // ignore: cast_nullable_to_non_nullable
+              as SubtitleCue?,
+      language: null == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
               as String,
-      isInitialized: null == isInitialized
-          ? _value.isInitialized
-          : isInitialized // ignore: cast_nullable_to_non_nullable
+      isVisible: null == isVisible
+          ? _value.isVisible
+          : isVisible // ignore: cast_nullable_to_non_nullable
               as bool,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isSwitching: null == isSwitching
-          ? _value.isSwitching
-          : isSwitching // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasError: null == hasError
-          ? _value.hasError
-          : hasError // ignore: cast_nullable_to_non_nullable
-              as bool,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
+      style: freezed == style
+          ? _value.style
+          : style // ignore: cast_nullable_to_non_nullable
+              as TextStyle?,
     ) as $Val);
+  }
+
+  /// Create a copy of SubtitleState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $SubtitleCueCopyWith<$Res>? get currentCue {
+    if (_value.currentCue == null) {
+      return null;
+    }
+
+    return $SubtitleCueCopyWith<$Res>(_value.currentCue!, (value) {
+      return _then(_value.copyWith(currentCue: value) as $Val);
+    });
   }
 }
 
@@ -347,16 +329,14 @@ abstract class _$$SubtitleStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {bool isEnabled,
-      List<SubtitleEntry> entries,
-      String? currentText,
-      List<String> availableLanguages,
-      String currentLanguage,
-      bool isInitialized,
-      bool isLoading,
-      bool isSwitching,
-      bool hasError,
-      String? errorMessage});
+      {List<SubtitleCue> subtitles,
+      SubtitleCue? currentCue,
+      String language,
+      bool isVisible,
+      @JsonKey(ignore: true) TextStyle? style});
+
+  @override
+  $SubtitleCueCopyWith<$Res>? get currentCue;
 }
 
 /// @nodoc
@@ -372,58 +352,33 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? isEnabled = null,
-    Object? entries = null,
-    Object? currentText = freezed,
-    Object? availableLanguages = null,
-    Object? currentLanguage = null,
-    Object? isInitialized = null,
-    Object? isLoading = null,
-    Object? isSwitching = null,
-    Object? hasError = null,
-    Object? errorMessage = freezed,
+    Object? subtitles = null,
+    Object? currentCue = freezed,
+    Object? language = null,
+    Object? isVisible = null,
+    Object? style = freezed,
   }) {
     return _then(_$SubtitleStateImpl(
-      isEnabled: null == isEnabled
-          ? _value.isEnabled
-          : isEnabled // ignore: cast_nullable_to_non_nullable
-              as bool,
-      entries: null == entries
-          ? _value._entries
-          : entries // ignore: cast_nullable_to_non_nullable
-              as List<SubtitleEntry>,
-      currentText: freezed == currentText
-          ? _value.currentText
-          : currentText // ignore: cast_nullable_to_non_nullable
-              as String?,
-      availableLanguages: null == availableLanguages
-          ? _value._availableLanguages
-          : availableLanguages // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      currentLanguage: null == currentLanguage
-          ? _value.currentLanguage
-          : currentLanguage // ignore: cast_nullable_to_non_nullable
+      subtitles: null == subtitles
+          ? _value._subtitles
+          : subtitles // ignore: cast_nullable_to_non_nullable
+              as List<SubtitleCue>,
+      currentCue: freezed == currentCue
+          ? _value.currentCue
+          : currentCue // ignore: cast_nullable_to_non_nullable
+              as SubtitleCue?,
+      language: null == language
+          ? _value.language
+          : language // ignore: cast_nullable_to_non_nullable
               as String,
-      isInitialized: null == isInitialized
-          ? _value.isInitialized
-          : isInitialized // ignore: cast_nullable_to_non_nullable
+      isVisible: null == isVisible
+          ? _value.isVisible
+          : isVisible // ignore: cast_nullable_to_non_nullable
               as bool,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isSwitching: null == isSwitching
-          ? _value.isSwitching
-          : isSwitching // ignore: cast_nullable_to_non_nullable
-              as bool,
-      hasError: null == hasError
-          ? _value.hasError
-          : hasError // ignore: cast_nullable_to_non_nullable
-              as bool,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
+      style: freezed == style
+          ? _value.style
+          : style // ignore: cast_nullable_to_non_nullable
+              as TextStyle?,
     ));
   }
 }
@@ -432,67 +387,40 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SubtitleStateImpl implements _SubtitleState {
   const _$SubtitleStateImpl(
-      {this.isEnabled = false,
-      final List<SubtitleEntry> entries = const [],
-      this.currentText,
-      final List<String> availableLanguages = const [],
-      this.currentLanguage = 'english',
-      this.isInitialized = false,
-      this.isLoading = false,
-      this.isSwitching = false,
-      this.hasError = false,
-      this.errorMessage})
-      : _entries = entries,
-        _availableLanguages = availableLanguages;
+      {final List<SubtitleCue> subtitles = const [],
+      this.currentCue,
+      this.language = 'english',
+      this.isVisible = true,
+      @JsonKey(ignore: true) this.style})
+      : _subtitles = subtitles;
 
   factory _$SubtitleStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubtitleStateImplFromJson(json);
 
+  final List<SubtitleCue> _subtitles;
   @override
   @JsonKey()
-  final bool isEnabled;
-  final List<SubtitleEntry> _entries;
-  @override
-  @JsonKey()
-  List<SubtitleEntry> get entries {
-    if (_entries is EqualUnmodifiableListView) return _entries;
+  List<SubtitleCue> get subtitles {
+    if (_subtitles is EqualUnmodifiableListView) return _subtitles;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_entries);
+    return EqualUnmodifiableListView(_subtitles);
   }
 
   @override
-  final String? currentText;
-  final List<String> _availableLanguages;
+  final SubtitleCue? currentCue;
   @override
   @JsonKey()
-  List<String> get availableLanguages {
-    if (_availableLanguages is EqualUnmodifiableListView)
-      return _availableLanguages;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_availableLanguages);
-  }
-
+  final String language;
   @override
   @JsonKey()
-  final String currentLanguage;
+  final bool isVisible;
   @override
-  @JsonKey()
-  final bool isInitialized;
-  @override
-  @JsonKey()
-  final bool isLoading;
-  @override
-  @JsonKey()
-  final bool isSwitching;
-  @override
-  @JsonKey()
-  final bool hasError;
-  @override
-  final String? errorMessage;
+  @JsonKey(ignore: true)
+  final TextStyle? style;
 
   @override
   String toString() {
-    return 'SubtitleState(isEnabled: $isEnabled, entries: $entries, currentText: $currentText, availableLanguages: $availableLanguages, currentLanguage: $currentLanguage, isInitialized: $isInitialized, isLoading: $isLoading, isSwitching: $isSwitching, hasError: $hasError, errorMessage: $errorMessage)';
+    return 'SubtitleState(subtitles: $subtitles, currentCue: $currentCue, language: $language, isVisible: $isVisible, style: $style)';
   }
 
   @override
@@ -500,41 +428,26 @@ class _$SubtitleStateImpl implements _SubtitleState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SubtitleStateImpl &&
-            (identical(other.isEnabled, isEnabled) ||
-                other.isEnabled == isEnabled) &&
-            const DeepCollectionEquality().equals(other._entries, _entries) &&
-            (identical(other.currentText, currentText) ||
-                other.currentText == currentText) &&
             const DeepCollectionEquality()
-                .equals(other._availableLanguages, _availableLanguages) &&
-            (identical(other.currentLanguage, currentLanguage) ||
-                other.currentLanguage == currentLanguage) &&
-            (identical(other.isInitialized, isInitialized) ||
-                other.isInitialized == isInitialized) &&
-            (identical(other.isLoading, isLoading) ||
-                other.isLoading == isLoading) &&
-            (identical(other.isSwitching, isSwitching) ||
-                other.isSwitching == isSwitching) &&
-            (identical(other.hasError, hasError) ||
-                other.hasError == hasError) &&
-            (identical(other.errorMessage, errorMessage) ||
-                other.errorMessage == errorMessage));
+                .equals(other._subtitles, _subtitles) &&
+            (identical(other.currentCue, currentCue) ||
+                other.currentCue == currentCue) &&
+            (identical(other.language, language) ||
+                other.language == language) &&
+            (identical(other.isVisible, isVisible) ||
+                other.isVisible == isVisible) &&
+            const DeepCollectionEquality().equals(other.style, style));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      isEnabled,
-      const DeepCollectionEquality().hash(_entries),
-      currentText,
-      const DeepCollectionEquality().hash(_availableLanguages),
-      currentLanguage,
-      isInitialized,
-      isLoading,
-      isSwitching,
-      hasError,
-      errorMessage);
+      const DeepCollectionEquality().hash(_subtitles),
+      currentCue,
+      language,
+      isVisible,
+      const DeepCollectionEquality().hash(style));
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.
@@ -554,45 +467,238 @@ class _$SubtitleStateImpl implements _SubtitleState {
 
 abstract class _SubtitleState implements SubtitleState {
   const factory _SubtitleState(
-      {final bool isEnabled,
-      final List<SubtitleEntry> entries,
-      final String? currentText,
-      final List<String> availableLanguages,
-      final String currentLanguage,
-      final bool isInitialized,
-      final bool isLoading,
-      final bool isSwitching,
-      final bool hasError,
-      final String? errorMessage}) = _$SubtitleStateImpl;
+      {final List<SubtitleCue> subtitles,
+      final SubtitleCue? currentCue,
+      final String language,
+      final bool isVisible,
+      @JsonKey(ignore: true) final TextStyle? style}) = _$SubtitleStateImpl;
 
   factory _SubtitleState.fromJson(Map<String, dynamic> json) =
       _$SubtitleStateImpl.fromJson;
 
   @override
-  bool get isEnabled;
+  List<SubtitleCue> get subtitles;
   @override
-  List<SubtitleEntry> get entries;
+  SubtitleCue? get currentCue;
   @override
-  String? get currentText;
+  String get language;
   @override
-  List<String> get availableLanguages;
+  bool get isVisible;
   @override
-  String get currentLanguage;
-  @override
-  bool get isInitialized;
-  @override
-  bool get isLoading;
-  @override
-  bool get isSwitching;
-  @override
-  bool get hasError;
-  @override
-  String? get errorMessage;
+  @JsonKey(ignore: true)
+  TextStyle? get style;
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SubtitleStateImplCopyWith<_$SubtitleStateImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+SubtitleCue _$SubtitleCueFromJson(Map<String, dynamic> json) {
+  return _SubtitleCue.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SubtitleCue {
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  Duration get start => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  Duration get end => throw _privateConstructorUsedError;
+  String get text => throw _privateConstructorUsedError;
+
+  /// Serializes this SubtitleCue to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of SubtitleCue
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $SubtitleCueCopyWith<SubtitleCue> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SubtitleCueCopyWith<$Res> {
+  factory $SubtitleCueCopyWith(
+          SubtitleCue value, $Res Function(SubtitleCue) then) =
+      _$SubtitleCueCopyWithImpl<$Res, SubtitleCue>;
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      Duration start,
+      @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      Duration end,
+      String text});
+}
+
+/// @nodoc
+class _$SubtitleCueCopyWithImpl<$Res, $Val extends SubtitleCue>
+    implements $SubtitleCueCopyWith<$Res> {
+  _$SubtitleCueCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of SubtitleCue
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? start = null,
+    Object? end = null,
+    Object? text = null,
+  }) {
+    return _then(_value.copyWith(
+      start: null == start
+          ? _value.start
+          : start // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      end: null == end
+          ? _value.end
+          : end // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      text: null == text
+          ? _value.text
+          : text // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$SubtitleCueImplCopyWith<$Res>
+    implements $SubtitleCueCopyWith<$Res> {
+  factory _$$SubtitleCueImplCopyWith(
+          _$SubtitleCueImpl value, $Res Function(_$SubtitleCueImpl) then) =
+      __$$SubtitleCueImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      Duration start,
+      @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      Duration end,
+      String text});
+}
+
+/// @nodoc
+class __$$SubtitleCueImplCopyWithImpl<$Res>
+    extends _$SubtitleCueCopyWithImpl<$Res, _$SubtitleCueImpl>
+    implements _$$SubtitleCueImplCopyWith<$Res> {
+  __$$SubtitleCueImplCopyWithImpl(
+      _$SubtitleCueImpl _value, $Res Function(_$SubtitleCueImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of SubtitleCue
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? start = null,
+    Object? end = null,
+    Object? text = null,
+  }) {
+    return _then(_$SubtitleCueImpl(
+      start: null == start
+          ? _value.start
+          : start // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      end: null == end
+          ? _value.end
+          : end // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      text: null == text
+          ? _value.text
+          : text // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SubtitleCueImpl implements _SubtitleCue {
+  const _$SubtitleCueImpl(
+      {@JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      required this.start,
+      @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      required this.end,
+      required this.text});
+
+  factory _$SubtitleCueImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SubtitleCueImplFromJson(json);
+
+  @override
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  final Duration start;
+  @override
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  final Duration end;
+  @override
+  final String text;
+
+  @override
+  String toString() {
+    return 'SubtitleCue(start: $start, end: $end, text: $text)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SubtitleCueImpl &&
+            (identical(other.start, start) || other.start == start) &&
+            (identical(other.end, end) || other.end == end) &&
+            (identical(other.text, text) || other.text == text));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, start, end, text);
+
+  /// Create a copy of SubtitleCue
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SubtitleCueImplCopyWith<_$SubtitleCueImpl> get copyWith =>
+      __$$SubtitleCueImplCopyWithImpl<_$SubtitleCueImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SubtitleCueImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _SubtitleCue implements SubtitleCue {
+  const factory _SubtitleCue(
+      {@JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      required final Duration start,
+      @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+      required final Duration end,
+      required final String text}) = _$SubtitleCueImpl;
+
+  factory _SubtitleCue.fromJson(Map<String, dynamic> json) =
+      _$SubtitleCueImpl.fromJson;
+
+  @override
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  Duration get start;
+  @override
+  @JsonKey(fromJson: _durationFromJson, toJson: _durationToJson)
+  Duration get end;
+  @override
+  String get text;
+
+  /// Create a copy of SubtitleCue
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$SubtitleCueImplCopyWith<_$SubtitleCueImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
