@@ -29,23 +29,69 @@ class HomeScreen extends ConsumerWidget {
           CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 120,
                 floating: false,
                 pinned: true,
                 backgroundColor: Colors.transparent,
                 flexibleSpace: FlexibleSpaceBar(
-                  title: const Text(
-                    'ReelAI',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 3,
-                      shadows: [
-                        Shadow(
-                          color: AppColors.neonPink,
-                          blurRadius: 10,
-                        ),
-                      ],
+                  centerTitle: true,
+                  titlePadding: const EdgeInsets.only(bottom: 16),
+                  title: Transform(
+                    transform: Matrix4.skewX(-0.2),
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFFFF3399), // Hot pink
+                          const Color(0xFFFF1177), // Brighter pink
+                          const Color(0xFF00CCFF), // Cyan
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ).createShader(bounds),
+                      child: Stack(
+                        children: [
+                          // Shadow copies
+                          for (var i = 1; i <= 4; i++)
+                            Positioned(
+                              left: i * 1.0,
+                              top: i * 1.0,
+                              child: Text(
+                                'ReelAI',
+                                style: TextStyle(
+                                  fontSize: 52,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 8,
+                                  height: 1,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                              ),
+                            ),
+                          // Main text
+                          Text(
+                            'ReelAI',
+                            style: const TextStyle(
+                              fontSize: 52,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 8,
+                              height: 1,
+                              color: Colors.white, // Set base color to white
+                              shadows: [
+                                Shadow(
+                                  color: Color(0xFFFF3399),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 0),
+                                ),
+                                Shadow(
+                                  color: Color(0xFF00CCFF),
+                                  blurRadius: 40,
+                                  offset: Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   background: Container(
@@ -54,9 +100,10 @@ class HomeScreen extends ConsumerWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.neonPurple.withOpacity(0.3),
+                          const Color(0xFF9933FF).withOpacity(0.5),
                           AppColors.darkBackground.withOpacity(0.1),
                         ],
+                        stops: const [0.0, 0.6],
                       ),
                     ),
                   ),
