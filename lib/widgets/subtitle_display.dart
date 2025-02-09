@@ -4,13 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../state/subtitle_controller.dart';
 
 class SubtitleDisplay extends HookConsumerWidget {
-  final double videoWidth;
-  final double videoHeight;
-
   const SubtitleDisplay({
     super.key,
-    required this.videoWidth,
-    required this.videoHeight,
   });
 
   @override
@@ -33,9 +28,8 @@ class SubtitleDisplay extends HookConsumerWidget {
     );
 
     return Container(
-      width: videoWidth,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      alignment: Alignment.bottomCenter,
+      alignment: Alignment.center,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

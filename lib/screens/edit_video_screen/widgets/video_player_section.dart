@@ -17,25 +17,25 @@ class VideoPlayerSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Center(
-      child: Container(
-        color: Colors.black,
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Chewie(controller: chewieController),
-            // Subtitle overlay using our new system
-            Consumer(
-              builder: (context, ref, _) {
-                final videoSize =
-                    chewieController.videoPlayerController.value.size;
-                return SubtitleDisplay(
-                  videoWidth: videoSize.width,
-                  videoHeight: videoSize.height,
-                );
-              },
-            ),
-          ],
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                color: Colors.black,
+                child: Chewie(controller: chewieController),
+              ),
+              // Fixed position subtitle overlay
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 80,
+                child: SubtitleDisplay(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
