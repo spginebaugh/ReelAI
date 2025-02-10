@@ -28,7 +28,9 @@ class CameraScreen extends HookConsumerWidget {
         DeviceOrientation.portraitUp,
       ]);
 
-      PermissionsService.requestCameraAndMicrophonePermissions()
+      ref
+          .read(permissionsServiceProvider)
+          .requestCameraAndMicrophonePermissions()
           .then((granted) {
         if (granted) {
           availableCameras().then((cameras) {

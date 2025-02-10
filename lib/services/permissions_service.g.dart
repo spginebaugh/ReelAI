@@ -1,27 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'video_edit_provider.dart';
+part of 'permissions_service.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$videoEditControllerHash() =>
-    r'5f93064d78c30ffea72468c2414f662cec36d681';
+String _$permissionsServiceHash() =>
+    r'3f00dc579b15fa283e57c08883618daca94a3d3f';
 
-/// See also [VideoEditController].
-@ProviderFor(VideoEditController)
-final videoEditControllerProvider = AutoDisposeAsyncNotifierProvider<
-    VideoEditController, VideoEditState>.internal(
-  VideoEditController.new,
-  name: r'videoEditControllerProvider',
+/// See also [permissionsService].
+@ProviderFor(permissionsService)
+final permissionsServiceProvider =
+    AutoDisposeProvider<PermissionsService>.internal(
+  permissionsService,
+  name: r'permissionsServiceProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$videoEditControllerHash,
+      : _$permissionsServiceHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$VideoEditController = AutoDisposeAsyncNotifier<VideoEditState>;
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PermissionsServiceRef = AutoDisposeProviderRef<PermissionsService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

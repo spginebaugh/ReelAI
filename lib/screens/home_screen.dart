@@ -149,7 +149,8 @@ class HomeScreen extends ConsumerWidget {
                         }
 
                         try {
-                          final hasPermission = await PermissionsService
+                          final hasPermission = await ref
+                              .read(permissionsServiceProvider)
                               .requestStoragePermission();
                           if (!hasPermission) {
                             if (context.mounted) {

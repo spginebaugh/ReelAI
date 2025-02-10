@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/video.dart';
@@ -9,13 +8,13 @@ import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
 import '../services/video_processing_service.dart';
 import '../utils/storage_paths.dart';
-import '../services/video/factories/chewie_controller_factory.dart';
-import '../services/video/factories/video_player_factory.dart';
 import 'auth_provider.dart';
 import 'audio_player_provider.dart';
 import 'subtitle_controller.dart';
 import 'package:flutter/foundation.dart';
-import '../state/subtitle_controller.dart';
+import 'video_controller_provider.dart';
+import '../utils/logger.dart';
+import '../utils/error_handler.dart';
 
 part 'video_edit_provider.g.dart';
 
@@ -27,7 +26,11 @@ class VideoEditController extends _$VideoEditController {
   Future<VideoEditState> build() async {
     ref.onDispose(() {
       state.whenData((state) {
-        _disposeCurrentControllers(state);
+        Logger.state('Disposing video edit state');
+        ref.read(videoControllerManagerProvider).disposeControllers(
+              videoPlayerController: state.videoPlayerController,
+              chewieController: state.chewieController,
+            );
         _videoService.cleanup([
           state.tempVideoFile?.path,
           state.currentPreviewPath,
@@ -41,48 +44,15 @@ class VideoEditController extends _$VideoEditController {
     return VideoEditState.initial();
   }
 
-  // Helper Methods
-  void _disposeCurrentControllers(VideoEditState state) {
-    state.chewieController?.dispose();
-    state.videoPlayerController?.dispose();
-  }
-
-  Future<void> _ensureControllersMuted(VideoPlayerController controller) async {
-    debugPrint('🔇 Ensuring controllers are muted');
-    await controller.setVolume(0);
-    if (controller.value.volume > 0) {
-      debugPrint('⚠️ Volume not 0, forcing mute');
-      await controller.setVolume(0);
-      if (controller.value.volume > 0) {
-        throw Exception('Failed to mute video player');
-      }
-    }
-  }
-
-  Future<(VideoPlayerController, ChewieController)> _createAndVerifyControllers(
-    File videoFile,
-  ) async {
-    debugPrint('🎥 Creating new video controllers');
-    final videoPlayerController = await VideoPlayerFactory.create(videoFile);
-    await _ensureControllersMuted(videoPlayerController);
-
-    final chewieController = ChewieControllerFactory.create(
-      videoPlayerController,
-      showControls: true,
-      allowFullScreen: true,
-    );
-
-    return (videoPlayerController, chewieController);
-  }
-
   void _updateState(VideoEditState Function(VideoEditState) updater) {
     state.whenData((currentState) {
       state = AsyncValue.data(updater(currentState));
 
       // Verify muting after state update
-      if (currentState.videoPlayerController != null &&
-          currentState.videoPlayerController!.value.volume > 0) {
-        _ensureControllersMuted(currentState.videoPlayerController!);
+      if (currentState.videoPlayerController != null) {
+        ref
+            .read(videoControllerManagerProvider)
+            .verifyMuting(currentState.videoPlayerController);
       }
     });
   }
@@ -93,7 +63,7 @@ class VideoEditController extends _$VideoEditController {
         try {
           await _videoService.cleanup([path]);
         } catch (e) {
-          debugPrint('⚠️ Error cleaning up file: $e');
+          Logger.warning('Error cleaning up file', {'path': path, 'error': e});
         }
       }
     }
@@ -101,9 +71,11 @@ class VideoEditController extends _$VideoEditController {
 
   // Initialize Video System
   Future<void> _initializeVideoPlayer(File videoFile) async {
-    debugPrint('🎥 Initializing video player system');
-    final (videoPlayerController, chewieController) =
-        await _createAndVerifyControllers(videoFile);
+    Logger.video('Initializing video player system', {'path': videoFile.path});
+
+    final (videoPlayerController, chewieController) = await ref
+        .read(videoControllerManagerProvider)
+        .createAndVerifyControllers(videoFile);
 
     final duration = await _videoService.getVideoDuration(videoFile);
 
@@ -121,6 +93,8 @@ class VideoEditController extends _$VideoEditController {
           videoPlayerController: videoPlayerController,
           chewieController: chewieController,
         ));
+
+    Logger.success('Video player initialized successfully');
   }
 
   Future<void> _initializeAudioSystem(
@@ -160,9 +134,11 @@ class VideoEditController extends _$VideoEditController {
     state = const AsyncValue.loading();
 
     try {
-      debugPrint('🎥 Starting video initialization');
-      final tempFile = await _videoService.downloadVideo(video.videoUrl);
+      Logger.group('Video Initialization', () {
+        Logger.video('Starting video initialization', {'videoId': video.id});
+      });
 
+      final tempFile = await _videoService.downloadVideo(video.videoUrl);
       await _initializeVideoPlayer(tempFile);
 
       // Get subtitle URL
@@ -177,9 +153,9 @@ class VideoEditController extends _$VideoEditController {
       String? subtitleUrl;
       try {
         subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
-        debugPrint('🎥 Got subtitle URL: $subtitleUrl');
+        Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
       } catch (e) {
-        debugPrint('⚠️ No subtitles found: $e');
+        Logger.warning('No subtitles found', {'error': e});
       }
 
       // Initialize audio and subtitles
@@ -194,9 +170,16 @@ class VideoEditController extends _$VideoEditController {
           subtitleUrl,
         );
       }
-    } catch (e) {
-      debugPrint('❌ Error initializing video: $e');
-      state = AsyncValue.error(e, StackTrace.current);
+
+      Logger.success('Video initialization completed successfully');
+    } catch (e, st) {
+      final appError = ErrorHandler.handleError(e, st);
+      Logger.error('Error initializing video', {
+        'error': appError.toString(),
+        'originalError': e,
+        'stackTrace': st,
+      });
+      state = AsyncValue.error(appError, st);
     }
   }
 
@@ -224,6 +207,13 @@ class VideoEditController extends _$VideoEditController {
     _updateState((state) => state.copyWith(isProcessing: true));
 
     try {
+      Logger.group('Applying Filters', () {
+        Logger.video('Starting filter application', {
+          'filter': currentState.selectedFilter,
+          'brightness': currentState.brightness,
+        });
+      });
+
       await _prepareFilterApplication(currentState);
 
       final tempDir = await getTemporaryDirectory();
@@ -232,8 +222,9 @@ class VideoEditController extends _$VideoEditController {
 
       final filteredPath = await _createFilteredVideo(currentState, outputPath);
 
-      final (videoPlayerController, chewieController) =
-          await _createAndVerifyControllers(File(filteredPath));
+      final (videoPlayerController, chewieController) = await ref
+          .read(videoControllerManagerProvider)
+          .createAndVerifyControllers(File(filteredPath));
 
       _updateState((state) => state.copyWith(
             currentPreviewPath: filteredPath,
@@ -241,13 +232,24 @@ class VideoEditController extends _$VideoEditController {
             videoPlayerController: videoPlayerController,
             chewieController: chewieController,
           ));
+
+      Logger.success('Filters applied successfully');
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      final appError = ErrorHandler.handleError(e, st);
+      Logger.error('Error applying filters', {
+        'error': appError.toString(),
+        'originalError': e,
+        'stackTrace': st,
+      });
+      state = AsyncValue.error(appError, st);
     }
   }
 
   Future<void> _prepareTrimming(VideoEditState currentState) async {
-    _disposeCurrentControllers(currentState);
+    ref.read(videoControllerManagerProvider).disposeControllers(
+          videoPlayerController: currentState.videoPlayerController,
+          chewieController: currentState.chewieController,
+        );
   }
 
   Future<String?> _performTrimOperation(VideoEditState currentState) async {
@@ -270,8 +272,9 @@ class VideoEditController extends _$VideoEditController {
 
       if (outputPath != null) {
         final trimmedFile = File(outputPath);
-        final (videoPlayerController, chewieController) =
-            await _createAndVerifyControllers(trimmedFile);
+        final (videoPlayerController, chewieController) = await ref
+            .read(videoControllerManagerProvider)
+            .createAndVerifyControllers(trimmedFile);
 
         final duration = await _videoService.getVideoDuration(trimmedFile);
 
@@ -320,20 +323,32 @@ class VideoEditController extends _$VideoEditController {
   }
 
   Future<void> muteAllAudio() async {
-    debugPrint('🔇 Muting all audio sources');
+    Logger.audio('Muting all audio sources');
 
     final currentState = state.value;
     if (currentState == null) return;
 
-    if (currentState.videoPlayerController != null) {
-      await _ensureControllersMuted(currentState.videoPlayerController!);
-    }
+    try {
+      if (currentState.videoPlayerController != null) {
+        await ref
+            .read(videoControllerManagerProvider)
+            .ensureControllersMuted(currentState.videoPlayerController!);
+      }
 
-    if (currentState.chewieController != null) {
-      currentState.chewieController!.setVolume(0);
-    }
+      if (currentState.chewieController != null) {
+        currentState.chewieController!.setVolume(0);
+      }
 
-    await ref.read(audioPlayerControllerProvider.notifier).muteEverything();
-    debugPrint('🔇 All audio sources muted');
+      await ref.read(audioPlayerControllerProvider.notifier).muteEverything();
+      Logger.success('All audio sources muted successfully');
+    } catch (e, st) {
+      final appError = ErrorHandler.handleError(e, st);
+      Logger.error('Error muting audio', {
+        'error': appError.toString(),
+        'originalError': e,
+        'stackTrace': st,
+      });
+      throw appError;
+    }
   }
 }

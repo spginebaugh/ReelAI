@@ -1,10 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:reel_ai/state/user_provider.dart';
+import '../state/user_provider.dart';
+import 'base_service.dart';
+import '../utils/error_handler.dart';
+import '../utils/transaction_decorator.dart';
+import '../utils/transaction_middleware.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService(ref));
 
-class AuthService {
+class AuthService extends BaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Ref _ref;
 
@@ -16,70 +20,129 @@ class AuthService {
   // Get current user
   User? get currentUser => _auth.currentUser;
 
-  // Sign Up
+  @WithTransaction(
+    category: ErrorCategory.auth,
+    middleware: [
+      AsyncTrackingMiddleware,
+      StateTrackingMiddleware,
+      NetworkTrackingMiddleware,
+    ],
+  )
   Future<UserCredential> createUserWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    return executeOperation(
+      operation: () async {
+        validateInput(
+          parameters: {'email': email, 'password': password},
+          validators: {
+            'email': (value) =>
+                value?.toString().isEmpty == true ? 'Email is required' : '',
+            'password': (value) =>
+                value?.toString().isEmpty == true ? 'Password is required' : '',
+          },
+        );
 
-      // Create user in Firestore
-      if (credential.user != null) {
-        final username = email.split('@')[0]; // Default username from email
-        await _ref.read(currentUserProvider.notifier).createOrUpdateUser(
-              username: username,
-              email: email,
-            );
-      }
+        final credential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
 
-      return credential;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+        // Create user in Firestore
+        if (credential.user != null) {
+          final username = email.split('@')[0]; // Default username from email
+          await _ref.read(currentUserProvider.notifier).createOrUpdateUser(
+                username: username,
+                email: email,
+              );
+        }
+
+        return credential;
+      },
+      operationName: 'createUserWithEmailAndPassword',
+      context: {'email': email},
+      errorCategory: ErrorCategory.auth,
+    );
   }
 
-  // Sign In
+  @WithTransaction(
+    category: ErrorCategory.auth,
+    middleware: [
+      AsyncTrackingMiddleware,
+      StateTrackingMiddleware,
+      NetworkTrackingMiddleware,
+    ],
+  )
   Future<UserCredential> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
-    try {
-      return await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+    return executeOperation(
+      operation: () async {
+        validateInput(
+          parameters: {'email': email, 'password': password},
+          validators: {
+            'email': (value) =>
+                value?.toString().isEmpty == true ? 'Email is required' : '',
+            'password': (value) =>
+                value?.toString().isEmpty == true ? 'Password is required' : '',
+          },
+        );
+
+        return await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      },
+      operationName: 'signInWithEmailAndPassword',
+      context: {'email': email},
+      errorCategory: ErrorCategory.auth,
+    );
   }
 
-  // Sign Out
+  @WithTransaction(
+    category: ErrorCategory.auth,
+    middleware: [AsyncTrackingMiddleware, StateTrackingMiddleware],
+  )
   Future<void> signOut() async {
-    try {
-      await _auth.signOut();
-    } catch (e) {
-      throw Exception('Failed to sign out: $e');
-    }
+    await executeOperation(
+      operation: () => _auth.signOut(),
+      operationName: 'signOut',
+      errorCategory: ErrorCategory.auth,
+    );
   }
 
-  String _handleAuthException(FirebaseAuthException e) {
+  AppError _handleAuthException(FirebaseAuthException e) {
+    final String message;
+    final ErrorSeverity severity = ErrorSeverity.warning;
+
     switch (e.code) {
       case 'user-not-found':
-        return 'No user found with this email.';
+        message = 'No user found with this email.';
+        break;
       case 'wrong-password':
-        return 'Wrong password provided.';
+        message = 'Wrong password provided.';
+        break;
       case 'email-already-in-use':
-        return 'Email is already in use.';
+        message = 'Email is already in use.';
+        break;
       case 'invalid-email':
-        return 'Invalid email address.';
+        message = 'Invalid email address.';
+        break;
       case 'weak-password':
-        return 'Password is too weak.';
+        message = 'Password is too weak.';
+        break;
       default:
-        return 'An error occurred. Please try again.';
+        message = 'An error occurred. Please try again.';
     }
+
+    return AppError(
+      title: 'Authentication Error',
+      message: message,
+      category: ErrorCategory.auth,
+      severity: severity,
+      context: {'code': e.code},
+    );
   }
 }
