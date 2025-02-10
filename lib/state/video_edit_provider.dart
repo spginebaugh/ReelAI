@@ -27,8 +27,7 @@ class VideoEditController extends _$VideoEditController {
   Future<VideoEditState> build() async {
     ref.onDispose(() {
       state.whenData((state) {
-        state.chewieController?.dispose();
-        state.videoPlayerController?.dispose();
+        _disposeCurrentControllers(state);
         _videoService.cleanup([
           state.tempVideoFile?.path,
           state.currentPreviewPath,
@@ -42,43 +41,129 @@ class VideoEditController extends _$VideoEditController {
     return VideoEditState.initial();
   }
 
+  // Helper Methods
+  void _disposeCurrentControllers(VideoEditState state) {
+    state.chewieController?.dispose();
+    state.videoPlayerController?.dispose();
+  }
+
+  Future<void> _ensureControllersMuted(VideoPlayerController controller) async {
+    debugPrint('🔇 Ensuring controllers are muted');
+    await controller.setVolume(0);
+    if (controller.value.volume > 0) {
+      debugPrint('⚠️ Volume not 0, forcing mute');
+      await controller.setVolume(0);
+      if (controller.value.volume > 0) {
+        throw Exception('Failed to mute video player');
+      }
+    }
+  }
+
+  Future<(VideoPlayerController, ChewieController)> _createAndVerifyControllers(
+    File videoFile,
+  ) async {
+    debugPrint('🎥 Creating new video controllers');
+    final videoPlayerController = await VideoPlayerFactory.create(videoFile);
+    await _ensureControllersMuted(videoPlayerController);
+
+    final chewieController = ChewieControllerFactory.create(
+      videoPlayerController,
+      showControls: true,
+      allowFullScreen: true,
+    );
+
+    return (videoPlayerController, chewieController);
+  }
+
+  void _updateState(VideoEditState Function(VideoEditState) updater) {
+    state.whenData((currentState) {
+      state = AsyncValue.data(updater(currentState));
+
+      // Verify muting after state update
+      if (currentState.videoPlayerController != null &&
+          currentState.videoPlayerController!.value.volume > 0) {
+        _ensureControllersMuted(currentState.videoPlayerController!);
+      }
+    });
+  }
+
+  Future<void> _cleanupPreviousFiles(List<String?> paths) async {
+    for (final path in paths) {
+      if (path != null) {
+        try {
+          await _videoService.cleanup([path]);
+        } catch (e) {
+          debugPrint('⚠️ Error cleaning up file: $e');
+        }
+      }
+    }
+  }
+
+  // Initialize Video System
+  Future<void> _initializeVideoPlayer(File videoFile) async {
+    debugPrint('🎥 Initializing video player system');
+    final (videoPlayerController, chewieController) =
+        await _createAndVerifyControllers(videoFile);
+
+    final duration = await _videoService.getVideoDuration(videoFile);
+
+    _updateState((currentState) => currentState.copyWith(
+          isProcessing: false,
+          isLoading: false,
+          isPlaying: false,
+          isInitialized: true,
+          currentMode: EditingMode.none,
+          startValue: 0,
+          endValue: duration,
+          brightness: 1.0,
+          selectedFilter: FilterOption.none,
+          tempVideoFile: videoFile,
+          videoPlayerController: videoPlayerController,
+          chewieController: chewieController,
+        ));
+  }
+
+  Future<void> _initializeAudioSystem(
+    VideoPlayerController controller,
+    String videoId,
+  ) async {
+    debugPrint('🔊 Initializing audio system');
+    await ref
+        .read(audioPlayerControllerProvider.notifier)
+        .initialize(controller);
+
+    await ref
+        .read(audioPlayerControllerProvider.notifier)
+        .switchLanguage(videoId, 'english');
+  }
+
+  Future<void> _initializeSubtitleSystem(
+    VideoPlayerController controller,
+    String videoId,
+    String userId,
+    String subtitleUrl,
+  ) async {
+    debugPrint('📝 Initializing subtitle system');
+    await ref
+        .read(subtitleControllerProvider.notifier)
+        .initialize(controller, subtitleUrl);
+
+    await ref
+        .read(subtitleControllerProvider.notifier)
+        .loadAvailableLanguages(videoId, userId);
+  }
+
+  // Main Methods
   Future<void> initializeVideo(Video video) async {
     if (state.value?.isInitialized ?? false) return;
 
     state = const AsyncValue.loading();
 
     try {
-      debugPrint('🎥 VideoEdit: Starting video initialization');
-
-      // Download and save the original video
+      debugPrint('🎥 Starting video initialization');
       final tempFile = await _videoService.downloadVideo(video.videoUrl);
-      debugPrint('🎥 VideoEdit: Video downloaded to temp file');
 
-      // Initialize video player with completely disabled audio
-      debugPrint('🎥 VideoEdit: Creating video player with disabled audio');
-      final videoPlayerController = VideoPlayerController.file(
-        tempFile,
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true, // Allow mixing with our audio track
-        ),
-      );
-
-      // Initialize and ensure audio is disabled
-      debugPrint('🎥 VideoEdit: Initializing video player');
-      await videoPlayerController.initialize();
-      debugPrint('🎥 VideoEdit: Setting volume to 0');
-      await videoPlayerController.setVolume(0);
-
-      // Double-check volume is 0
-      if (videoPlayerController.value.volume > 0) {
-        debugPrint(
-            '⚠️ VideoEdit: Volume not 0 after initialization, forcing mute');
-        await videoPlayerController.setVolume(0);
-        // Verify mute worked
-        if (videoPlayerController.value.volume > 0) {
-          throw Exception('Failed to mute video player');
-        }
-      }
+      await _initializeVideoPlayer(tempFile);
 
       // Get subtitle URL
       final storage = FirebaseStorage.instance;
@@ -92,322 +177,163 @@ class VideoEditController extends _$VideoEditController {
       String? subtitleUrl;
       try {
         subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
-        debugPrint('🎥 VideoEdit: Got subtitle URL: $subtitleUrl');
+        debugPrint('🎥 Got subtitle URL: $subtitleUrl');
       } catch (e) {
-        debugPrint('⚠️ VideoEdit: No subtitles found: $e');
+        debugPrint('⚠️ No subtitles found: $e');
       }
 
-      debugPrint('🎥 VideoEdit: Creating Chewie controller with muted audio');
-      final chewieController = ChewieControllerFactory.create(
-        videoPlayerController,
-        showControls: true,
-        allowFullScreen: true,
-      );
+      // Initialize audio and subtitles
+      final videoPlayerController = state.value!.videoPlayerController!;
+      await _initializeAudioSystem(videoPlayerController, video.id);
 
-      final duration = await _videoService.getVideoDuration(tempFile);
-      debugPrint('🎥 VideoEdit: Controllers initialized');
-
-      // First update state with the initialized video controllers
-      state = AsyncValue.data(
-        VideoEditState(
-          isProcessing: false,
-          isLoading: false,
-          isPlaying: false,
-          isInitialized: true,
-          currentMode: EditingMode.none,
-          startValue: 0,
-          endValue: duration,
-          brightness: 1.0,
-          selectedFilter: FilterOption.none,
-          availableFilters: [FilterOption.none],
-          tempVideoFile: tempFile,
-          currentPreviewPath: null,
-          processedVideoPath: null,
-          videoPlayerController: videoPlayerController,
-          chewieController: chewieController,
-        ),
-      );
-      debugPrint('🎥 VideoEdit: State updated with initialized controllers');
-
-      // Verify volume is still 0 after state update
-      if (videoPlayerController.value.volume > 0) {
-        debugPrint(
-            '⚠️ VideoEdit: Volume changed after state update, re-muting');
-        await videoPlayerController.setVolume(0);
-      }
-
-      // Now initialize the audio player with the initialized video controller
-      debugPrint('🎥 VideoEdit: Initializing audio player');
-      try {
-        await ref
-            .read(audioPlayerControllerProvider.notifier)
-            .initialize(videoPlayerController);
-        debugPrint('🎥 VideoEdit: Audio player initialized');
-
-        // Set up the initial English audio
-        debugPrint('🎥 VideoEdit: Setting initial English audio');
-        await ref
-            .read(audioPlayerControllerProvider.notifier)
-            .switchLanguage(video.id, 'english');
-        debugPrint('✅ VideoEdit: Video initialization complete');
-
-        // Final volume check
-        if (videoPlayerController.value.volume > 0) {
-          debugPrint(
-              '⚠️ VideoEdit: Volume changed after audio setup, re-muting');
-          await videoPlayerController.setVolume(0);
-        }
-
-        // Initialize subtitle system if subtitles are available
-        if (subtitleUrl != null) {
-          debugPrint('🎥 VideoEdit: Initializing subtitle system');
-          await ref
-              .read(subtitleControllerProvider.notifier)
-              .initialize(videoPlayerController, subtitleUrl);
-
-          // Load available subtitle languages
-          await ref
-              .read(subtitleControllerProvider.notifier)
-              .loadAvailableLanguages(video.id, user.uid);
-
-          debugPrint('✅ VideoEdit: Subtitle system initialized');
-        }
-      } catch (e) {
-        debugPrint('❌ VideoEdit: Error initializing audio/subtitles: $e');
-        rethrow;
+      if (subtitleUrl != null) {
+        await _initializeSubtitleSystem(
+          videoPlayerController,
+          video.id,
+          user.uid,
+          subtitleUrl,
+        );
       }
     } catch (e) {
-      debugPrint('❌ VideoEdit: Error initializing video: $e');
+      debugPrint('❌ Error initializing video: $e');
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
-  void setMode(EditingMode mode) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        currentMode: mode,
-        availableFilters: currentState.availableFilters,
-      ));
-    });
+  Future<void> _prepareFilterApplication(VideoEditState currentState) async {
+    currentState.chewieController?.pause();
+    await _cleanupPreviousFiles([currentState.currentPreviewPath]);
+  }
+
+  Future<String> _createFilteredVideo(
+    VideoEditState currentState,
+    String outputPath,
+  ) async {
+    return _videoService.applyFilters(
+      inputFile: currentState.tempVideoFile!,
+      filter: currentState.selectedFilter,
+      brightness: currentState.brightness,
+      outputPath: outputPath,
+    );
   }
 
   Future<void> applyFilters() async {
     final currentState = state.value;
     if (currentState == null || currentState.isProcessing) return;
 
-    state = AsyncValue.data(currentState.copyWith(
-      isProcessing: true,
-      availableFilters: currentState.availableFilters,
-    ));
+    _updateState((state) => state.copyWith(isProcessing: true));
 
     try {
-      currentState.chewieController?.pause();
+      await _prepareFilterApplication(currentState);
 
       final tempDir = await getTemporaryDirectory();
       final outputPath =
           '${tempDir.path}/preview_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
-      final filteredPath = await _videoService.applyFilters(
-        inputFile: currentState.tempVideoFile!,
-        filter: currentState.selectedFilter,
-        brightness: currentState.brightness,
-        outputPath: outputPath,
-      );
+      final filteredPath = await _createFilteredVideo(currentState, outputPath);
 
-      // Clean up previous preview file
-      await _videoService.cleanup([currentState.currentPreviewPath]);
+      final (videoPlayerController, chewieController) =
+          await _createAndVerifyControllers(File(filteredPath));
 
-      // Initialize new video controller
-      final videoPlayerController = VideoPlayerController.file(
-        File(filteredPath),
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true, // Allow mixing with our audio track
-        ),
-      );
-
-      // Initialize and verify muted
-      await videoPlayerController.initialize();
-      await videoPlayerController.setVolume(0);
-      if (videoPlayerController.value.volume > 0) {
-        debugPrint('⚠️ VideoEdit: New filtered video not muted, forcing mute');
-        await videoPlayerController.setVolume(0);
-        if (videoPlayerController.value.volume > 0) {
-          throw Exception('Failed to mute filtered video');
-        }
-      }
-
-      // Create new Chewie controller with muted settings
-      final newChewieController = ChewieControllerFactory.create(
-        videoPlayerController,
-        showControls: true,
-        allowFullScreen: true,
-      );
-
-      state = AsyncValue.data(currentState.copyWith(
-        currentPreviewPath: filteredPath,
-        isProcessing: false,
-        videoPlayerController: videoPlayerController,
-        chewieController: newChewieController,
-        availableFilters: currentState.availableFilters,
-      ));
-
-      // Verify volume is still 0 after state update
-      if (videoPlayerController.value.volume > 0) {
-        debugPrint(
-            '⚠️ VideoEdit: Volume changed after filter update, re-muting');
-        await videoPlayerController.setVolume(0);
-      }
+      _updateState((state) => state.copyWith(
+            currentPreviewPath: filteredPath,
+            isProcessing: false,
+            videoPlayerController: videoPlayerController,
+            chewieController: chewieController,
+          ));
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  Future<void> _prepareTrimming(VideoEditState currentState) async {
+    _disposeCurrentControllers(currentState);
+  }
+
+  Future<String?> _performTrimOperation(VideoEditState currentState) async {
+    return _videoService.trimVideo(
+      inputFile: currentState.tempVideoFile!,
+      startValue: currentState.startValue,
+      endValue: currentState.endValue,
+    );
   }
 
   Future<void> processVideo() async {
     final currentState = state.value;
     if (currentState == null || currentState.isProcessing) return;
 
-    state = AsyncValue.data(currentState.copyWith(
-      isProcessing: true,
-      availableFilters: currentState.availableFilters,
-    ));
+    _updateState((state) => state.copyWith(isProcessing: true));
 
     try {
-      // Dispose of existing controllers
-      currentState.chewieController?.dispose();
-      currentState.videoPlayerController?.dispose();
-
-      final outputPath = await _videoService.trimVideo(
-        inputFile: currentState.tempVideoFile!,
-        startValue: currentState.startValue,
-        endValue: currentState.endValue,
-      );
+      await _prepareTrimming(currentState);
+      final outputPath = await _performTrimOperation(currentState);
 
       if (outputPath != null) {
-        // Initialize new controllers with the trimmed video
         final trimmedFile = File(outputPath);
-        final videoPlayerController = VideoPlayerController.file(
-          trimmedFile,
-          videoPlayerOptions: VideoPlayerOptions(
-            mixWithOthers: true, // Allow mixing with our audio track
-          ),
-        );
-
-        // Initialize and verify muted
-        await videoPlayerController.initialize();
-        await videoPlayerController.setVolume(0);
-        if (videoPlayerController.value.volume > 0) {
-          debugPrint('⚠️ VideoEdit: New trimmed video not muted, forcing mute');
-          await videoPlayerController.setVolume(0);
-          if (videoPlayerController.value.volume > 0) {
-            throw Exception('Failed to mute trimmed video');
-          }
-        }
-
-        // Create new Chewie controller with muted settings
-        final chewieController = ChewieControllerFactory.create(
-          videoPlayerController,
-          showControls: true,
-          allowFullScreen: true,
-        );
+        final (videoPlayerController, chewieController) =
+            await _createAndVerifyControllers(trimmedFile);
 
         final duration = await _videoService.getVideoDuration(trimmedFile);
 
-        // Clean up the old temp file
-        await _videoService.cleanup([currentState.tempVideoFile?.path]);
+        await _cleanupPreviousFiles([currentState.tempVideoFile?.path]);
 
-        state = AsyncValue.data(currentState.copyWith(
-          processedVideoPath: outputPath,
-          isProcessing: false,
-          tempVideoFile: trimmedFile,
-          videoPlayerController: videoPlayerController,
-          chewieController: chewieController,
-          startValue: 0,
-          endValue: duration,
-          currentMode: EditingMode.none,
-          availableFilters: currentState.availableFilters,
-        ));
-
-        // Verify volume is still 0 after state update
-        if (videoPlayerController.value.volume > 0) {
-          debugPrint(
-              '⚠️ VideoEdit: Volume changed after trim update, re-muting');
-          await videoPlayerController.setVolume(0);
-        }
+        _updateState((state) => state.copyWith(
+              processedVideoPath: outputPath,
+              isProcessing: false,
+              tempVideoFile: trimmedFile,
+              videoPlayerController: videoPlayerController,
+              chewieController: chewieController,
+              startValue: 0,
+              endValue: duration,
+              currentMode: EditingMode.none,
+            ));
       }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
+  // State Update Methods
+  void setMode(EditingMode mode) {
+    _updateState((state) => state.copyWith(currentMode: mode));
+  }
+
   void updateStartValue(double value) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        startValue: value,
-        availableFilters: currentState.availableFilters,
-      ));
-    });
+    _updateState((state) => state.copyWith(startValue: value));
   }
 
   void updateEndValue(double value) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        endValue: value,
-        availableFilters: currentState.availableFilters,
-      ));
-    });
+    _updateState((state) => state.copyWith(endValue: value));
   }
 
   void updatePlaybackState(bool isPlaying) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        isPlaying: isPlaying,
-        availableFilters: currentState.availableFilters,
-      ));
-    });
+    _updateState((state) => state.copyWith(isPlaying: isPlaying));
   }
 
   void updateFilter(FilterOption filter) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        selectedFilter: filter,
-        availableFilters: currentState.availableFilters,
-      ));
-      applyFilters();
-    });
+    _updateState((state) => state.copyWith(selectedFilter: filter));
+    applyFilters();
   }
 
   void updateBrightness(double value) {
-    state.whenData((currentState) {
-      state = AsyncValue.data(currentState.copyWith(
-        brightness: value,
-        availableFilters: currentState.availableFilters,
-      ));
-    });
+    _updateState((state) => state.copyWith(brightness: value));
   }
 
-  /// Test function to mute all audio sources
   Future<void> muteAllAudio() async {
-    debugPrint('🔇 VideoEdit: Muting all audio sources');
+    debugPrint('🔇 Muting all audio sources');
 
     final currentState = state.value;
     if (currentState == null) return;
 
-    // Mute video player
     if (currentState.videoPlayerController != null) {
-      debugPrint('🔇 VideoEdit: Muting video player');
-      await currentState.videoPlayerController!.setVolume(0);
+      await _ensureControllersMuted(currentState.videoPlayerController!);
     }
 
-    // Mute chewie controller
     if (currentState.chewieController != null) {
-      debugPrint('🔇 VideoEdit: Muting chewie controller');
       currentState.chewieController!.setVolume(0);
     }
 
-    // Mute audio player
-    debugPrint('🔇 VideoEdit: Muting audio player via provider');
     await ref.read(audioPlayerControllerProvider.notifier).muteEverything();
-
-    debugPrint('🔇 VideoEdit: All audio sources should now be muted');
+    debugPrint('🔇 All audio sources muted');
   }
 }
