@@ -436,7 +436,7 @@ class _$SubtitleStateImpl implements _SubtitleState {
                 other.language == language) &&
             (identical(other.isVisible, isVisible) ||
                 other.isVisible == isVisible) &&
-            const DeepCollectionEquality().equals(other.style, style));
+            (identical(other.style, style) || other.style == style));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -447,7 +447,7 @@ class _$SubtitleStateImpl implements _SubtitleState {
       currentCue,
       language,
       isVisible,
-      const DeepCollectionEquality().hash(style));
+      style);
 
   /// Create a copy of SubtitleState
   /// with the given fields replaced by the non-null parameter values.

@@ -9,6 +9,8 @@ import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
 import '../services/video_processing_service.dart';
 import '../utils/storage_paths.dart';
+import '../services/video/factories/chewie_controller_factory.dart';
+import '../services/video/factories/video_player_factory.dart';
 import 'auth_provider.dart';
 import 'audio_player_provider.dart';
 import 'subtitle_controller.dart';
@@ -96,14 +98,9 @@ class VideoEditController extends _$VideoEditController {
       }
 
       debugPrint('🎥 VideoEdit: Creating Chewie controller with muted audio');
-      final chewieController = ChewieController(
-        videoPlayerController: videoPlayerController,
-        autoPlay: false,
-        allowMuting: false, // Prevent user from unmuting
+      final chewieController = ChewieControllerFactory.create(
+        videoPlayerController,
         showControls: true,
-        showOptions: false, // Hide additional options
-        showControlsOnInitialize: false,
-        isLive: false,
         allowFullScreen: true,
       );
 
@@ -240,14 +237,9 @@ class VideoEditController extends _$VideoEditController {
       }
 
       // Create new Chewie controller with muted settings
-      final newChewieController = ChewieController(
-        videoPlayerController: videoPlayerController,
-        autoPlay: false,
-        allowMuting: false,
+      final newChewieController = ChewieControllerFactory.create(
+        videoPlayerController,
         showControls: true,
-        showOptions: false,
-        showControlsOnInitialize: false,
-        isLive: false,
         allowFullScreen: true,
       );
 
@@ -312,14 +304,9 @@ class VideoEditController extends _$VideoEditController {
         }
 
         // Create new Chewie controller with muted settings
-        final chewieController = ChewieController(
-          videoPlayerController: videoPlayerController,
-          autoPlay: false,
-          allowMuting: false,
+        final chewieController = ChewieControllerFactory.create(
+          videoPlayerController,
           showControls: true,
-          showOptions: false,
-          showControlsOnInitialize: false,
-          isLive: false,
           allowFullScreen: true,
         );
 

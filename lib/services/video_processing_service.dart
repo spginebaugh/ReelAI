@@ -9,6 +9,8 @@ import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import '../models/filter_option.dart';
 import 'ffmpeg_service.dart';
+import 'video/factories/chewie_controller_factory.dart';
+import 'video/factories/video_player_factory.dart';
 
 class VideoProcessingService {
   final FFmpegService _ffmpegService;
@@ -35,29 +37,30 @@ class VideoProcessingService {
 
   /// Initializes video player controller
   Future<ChewieController> initializePlayer(File videoFile) async {
-    final videoController = VideoPlayerController.file(videoFile);
-    await videoController.initialize();
+    // Use VideoPlayerFactory to create and initialize the controller
+    final videoController = await VideoPlayerFactory.create(videoFile);
 
-    return ChewieController(
-      videoPlayerController: videoController,
+    // Use ChewieControllerFactory to create the chewie controller
+    return ChewieControllerFactory.create(
+      videoController,
       autoPlay: false,
-      looping: false,
-      deviceOrientationsAfterFullScreen: [DeviceOrientation.portraitUp],
-      aspectRatio: videoController.value.aspectRatio,
-      allowedScreenSleep: false,
       showControls: true,
       allowFullScreen: false,
-      showOptions: false,
     );
   }
 
   /// Gets video duration in milliseconds
+  ///
+  /// Creates a temporary VideoPlayerController to get the duration.
+  /// The controller is properly disposed after use.
   Future<double> getVideoDuration(File videoFile) async {
-    final controller = VideoPlayerController.file(videoFile);
-    await controller.initialize();
-    final duration = controller.value.duration.inMilliseconds.toDouble();
-    await controller.dispose();
-    return duration;
+    VideoPlayerController? controller;
+    try {
+      controller = await VideoPlayerFactory.create(videoFile);
+      return controller.value.duration.inMilliseconds.toDouble();
+    } finally {
+      await controller?.dispose();
+    }
   }
 
   /// Applies filters to video

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:chewie/chewie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +9,6 @@ import 'package:firebase_core/firebase_core.dart';
 import '../models/video.dart';
 import '../services/video_service.dart';
 import '../widgets/error_text.dart';
-import '../state/video_edit_provider.dart';
 import '../router/route_names.dart';
 import '../services/video_processing_service.dart';
 
@@ -29,7 +27,6 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         useTextEditingController(text: video.description);
     final isLoading = useState(false);
     final errorMessage = useState<String?>(null);
-    final editState = ref.watch(videoEditControllerProvider);
     final isGeneratingTranslation = useState(false);
 
     Future<void> generateTranslation() async {
@@ -259,11 +256,6 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          if (editState.value?.chewieController != null)
-            SizedBox(
-              height: 200,
-              child: Chewie(controller: editState.value!.chewieController!),
-            ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
