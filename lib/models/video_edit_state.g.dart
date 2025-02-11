@@ -25,10 +25,6 @@ _$VideoEditStateImpl _$$VideoEditStateImplFromJson(Map<String, dynamic> json) =>
           const FileConverter().fromJson(json['tempVideoFile'] as String?),
       currentPreviewPath: json['currentPreviewPath'] as String?,
       processedVideoPath: json['processedVideoPath'] as String?,
-      videoPlayerController: const VideoPlayerControllerConverter()
-          .fromJson(json['videoPlayerController'] as String?),
-      chewieController: const ChewieControllerConverter()
-          .fromJson(json['chewieController'] as String?),
     );
 
 Map<String, dynamic> _$$VideoEditStateImplToJson(
@@ -47,10 +43,6 @@ Map<String, dynamic> _$$VideoEditStateImplToJson(
       'tempVideoFile': const FileConverter().toJson(instance.tempVideoFile),
       'currentPreviewPath': instance.currentPreviewPath,
       'processedVideoPath': instance.processedVideoPath,
-      'videoPlayerController': const VideoPlayerControllerConverter()
-          .toJson(instance.videoPlayerController),
-      'chewieController':
-          const ChewieControllerConverter().toJson(instance.chewieController),
     };
 
 const _$EditingModeEnumMap = {

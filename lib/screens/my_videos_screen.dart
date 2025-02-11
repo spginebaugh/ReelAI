@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../router/route_names.dart';
 import '../state/video_provider.dart';
 import '../state/user_provider.dart';
 import '../widgets/video_card.dart';
@@ -15,6 +17,10 @@ class MyVideosScreen extends HookConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Videos'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.goNamed(RouteNames.home),
+        ),
       ),
       body: currentUser.when(
         data: (user) {

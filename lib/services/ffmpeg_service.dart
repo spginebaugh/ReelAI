@@ -81,28 +81,72 @@ class FFmpegService extends BaseService {
         final directory = await getTemporaryDirectory();
         final outputPath = path.join(
           directory.path,
-          '${path.basenameWithoutExtension(videoPath)}.wav',
+          'audio_english.wav',
         );
 
+        // Clean up any existing file
+        final outputFile = File(outputPath);
+        if (await outputFile.exists()) {
+          await outputFile.delete();
+        }
+
+        // Verify input file exists and is readable
+        final inputFile = File(videoPath);
+        if (!await inputFile.exists()) {
+          throw ProcessingException(
+            'Input video file not found: $videoPath',
+            isCritical: true,
+          );
+        }
+
+        // Verify we can write to the output directory
+        try {
+          final testFile = File('${outputPath}_test');
+          await testFile.writeAsString('test');
+          await testFile.delete();
+        } catch (e) {
+          throw ProcessingException(
+            'Cannot write to temporary directory: ${e.toString()}',
+            isCritical: true,
+          );
+        }
+
+        // Execute FFmpeg command with enhanced error capture
         final session = await FFmpegKit.execute(
           '-i "$videoPath" -vn -acodec pcm_s16le -ar 44100 -ac 2 -f wav "$outputPath"',
         );
 
         final returnCode = await session.getReturnCode();
+        final logs = await session.getLogs();
+        final failStackTrace = await session.getFailStackTrace();
 
         if (!ReturnCode.isSuccess(returnCode)) {
-          final logs = await session.getLogs();
+          final errorMessage = StringBuffer()
+            ..writeln('Failed to extract audio:')
+            ..writeln('Return code: ${returnCode?.getValue() ?? "unknown"}')
+            ..writeln('Logs:')
+            ..writeln(logs?.take(1000).join('\n') ?? 'No logs available')
+            ..writeln('Stack trace:')
+            ..writeln(failStackTrace ?? 'No stack trace available');
+
           throw ProcessingException(
-            'Failed to extract audio: ${logs.join('\n')}',
+            errorMessage.toString(),
             isCritical: true,
           );
         }
 
-        // Verify the output file exists
-        final outputFile = File(outputPath);
+        // Verify the output file exists and has content
         if (!await outputFile.exists()) {
           throw ProcessingException(
             'Audio extraction completed but output file not found',
+            isCritical: true,
+          );
+        }
+
+        final fileSize = await outputFile.length();
+        if (fileSize == 0) {
+          throw ProcessingException(
+            'Audio extraction completed but output file is empty',
             isCritical: true,
           );
         }

@@ -12,6 +12,36 @@ import {
 } from "../services/elevenlabs";
 import {validateSubtitleFormat} from "../services/subtitle-converter";
 
+// Define supported languages
+export type SupportedLanguage = "es" | "pt" | "zh" | "de" | "ja";
+
+// Language display names for logging
+const LANGUAGE_NAMES: Record<SupportedLanguage, string> = {
+  es: "Spanish",
+  pt: "Portuguese",
+  zh: "Chinese",
+  de: "German",
+  ja: "Japanese",
+};
+
+/**
+ * Type guard function to validate if a string is a supported language code.
+ * This function acts as a TypeScript type guard,
+ * string to SupportedLanguage if it's valid.
+ *
+ * @param {string} lang - The language code to validate
+ * @return {boolean} True if the language code is supported, false otherwise
+ *
+ * @example
+ * if (isValidLanguage("es")) {
+ *   // lang is typed as SupportedLanguage here
+ *   const name = LANGUAGE_NAMES[lang];
+ * }
+ */
+function isValidLanguage(lang: string): lang is SupportedLanguage {
+  return ["es", "pt", "zh", "de", "ja"].includes(lang);
+}
+
 // Using v2 functions with correct auth setup
 export const generateTranslation = onCall(
   {
@@ -27,6 +57,7 @@ export const generateTranslation = onCall(
         hasAuth: !!request.auth,
         userId: request.auth?.uid,
         videoId: request.data?.videoId,
+        targetLanguage: request.data?.targetLanguage,
       });
 
       // Ensure user is authenticated
@@ -34,9 +65,18 @@ export const generateTranslation = onCall(
         throw new Error("User must be authenticated to translate audio");
       }
 
-      const {videoId} = request.data;
+      const {videoId, targetLanguage} = request.data;
       if (!videoId) {
         throw new Error("Video ID is required");
+      }
+
+      // Validate target language
+      if (!targetLanguage || !isValidLanguage(targetLanguage)) {
+        throw new Error(
+          `Invalid target language. Supported languages are: ${Object.keys(
+            LANGUAGE_NAMES,
+          ).join(", ")}`,
+        );
       }
 
       // Get video document from Firestore
@@ -52,12 +92,20 @@ export const generateTranslation = onCall(
 
       // Verify user owns this video
       const videoData = videoDoc.data();
-      if (videoData?.uploaderId !== request.auth.uid) {
-        throw new Error("Not authorized to translate this video");
+      if (videoData?.userId !== request.auth.uid) {
+        throw new Error("Unauthorized: User does not own this video");
       }
 
+      // Use userId consistently in log messages and operations
+      logger.info(
+        [
+          `Processing video for user ${videoData.userId}`,
+          `Target Language: ${LANGUAGE_NAMES[targetLanguage]}`,
+        ].join(" - "),
+      );
+
       const mp3StoragePath = [
-        videoData.uploaderId,
+        videoData.userId,
         videoId,
         "audio",
         "audio_english.mp3",
@@ -76,32 +124,40 @@ export const generateTranslation = onCall(
           size: fs.statSync(tempMp3Path).size,
         });
 
-        // Dub the audio to Portuguese
-        logger.info("🎙️ Starting Portuguese dubbing process");
+        // Dub the audio to target language
+        logger.info(
+          `🎙️ Starting ${LANGUAGE_NAMES[targetLanguage]} dubbing process`,
+        );
         const {
           audio: dubbedAudio,
           dubbingId,
-        } = await dubAudio(tempMp3Path, "pt");
+        } = await dubAudio(tempMp3Path, targetLanguage);
 
         // Upload dubbed MP3 to Firebase Storage
         const dubbedStoragePath = [
-          videoData.uploaderId,
+          videoData.userId,
           videoId,
           "audio",
-          "audio_portuguese.mp3",
+          `audio_${LANGUAGE_NAMES[targetLanguage].toLowerCase()}.mp3`,
         ].join("/");
 
-        logger.info("📤 Uploading Portuguese audio to storage:", {
-          path: dubbedStoragePath,
-        });
+        logger.info(
+          `📤 Uploading ${LANGUAGE_NAMES[targetLanguage]} audio to storage:`,
+          {
+            path: dubbedStoragePath,
+          },
+        );
 
         await getStorage().bucket().file(dubbedStoragePath).save(dubbedAudio, {
           contentType: "audio/mp3",
         });
 
         // Get subtitles for the dubbed audio
-        logger.info("📝 Getting Portuguese subtitles...");
-        const {srt, vtt} = await getSubtitlesForDubbing(dubbingId, "pt");
+        logger.info(`📝 Getting ${LANGUAGE_NAMES[targetLanguage]} subtitles...`);
+        const {srt, vtt} = await getSubtitlesForDubbing(
+          dubbingId,
+          targetLanguage,
+        );
 
         // Validate subtitle formats
         if (!validateSubtitleFormat(srt, "srt")) {
@@ -113,10 +169,10 @@ export const generateTranslation = onCall(
 
         // Calculate the base subtitles path
         const baseSubtitlesPath = [
-          videoData.uploaderId,
+          videoData.userId,
           videoId,
           "subtitles",
-          "subtitles_portuguese",
+          `subtitles_${LANGUAGE_NAMES[targetLanguage].toLowerCase()}`,
         ].join("/");
 
         // Upload all subtitle formats
@@ -128,7 +184,7 @@ export const generateTranslation = onCall(
             .save(srt, {
               contentType: "text/plain",
               metadata: {
-                language: "pt",
+                language: targetLanguage,
               },
             }),
           // VTT subtitles
@@ -138,7 +194,7 @@ export const generateTranslation = onCall(
             .save(vtt, {
               contentType: "text/vtt",
               metadata: {
-                language: "pt",
+                language: targetLanguage,
               },
             }),
         ];
@@ -147,7 +203,8 @@ export const generateTranslation = onCall(
 
         logger.info("✅ Audio translation and subtitle generation complete:", {
           videoId,
-          portuguesePath: dubbedStoragePath,
+          language: LANGUAGE_NAMES[targetLanguage],
+          dubbedPath: dubbedStoragePath,
           subtitlePath: baseSubtitlesPath,
         });
 
@@ -155,7 +212,26 @@ export const generateTranslation = onCall(
           success: true,
           dubbedPath: dubbedStoragePath,
           subtitlesPath: baseSubtitlesPath,
+          language: targetLanguage,
         };
+      } catch (error) {
+        logger.error("❌ Error in audio translation:", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          language: targetLanguage,
+        });
+        if (error instanceof Error) {
+          const errorMsg = [
+            `Failed to translate audio to ${LANGUAGE_NAMES[targetLanguage]}:`,
+            error.message,
+          ].join(" ");
+          throw new Error(errorMsg);
+        }
+        const unknownErrorMsg = [
+          `Failed to translate audio to ${LANGUAGE_NAMES[targetLanguage]}:`,
+          "Unknown error",
+        ].join(" ");
+        throw new Error(unknownErrorMsg);
       } finally {
         // Clean up temp files
         if (tempMp3Path) {

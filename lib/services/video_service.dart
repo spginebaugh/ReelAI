@@ -14,6 +14,10 @@ import 'base_service.dart';
 import '../utils/error_handler.dart';
 import '../utils/transaction_decorator.dart';
 import '../utils/transaction_middleware.dart';
+import '../utils/constants.dart';
+import '../utils/logger.dart';
+import '../utils/error_context.dart';
+import '../utils/json_utils.dart';
 
 part 'video_service.g.dart';
 
@@ -85,83 +89,225 @@ class VideoService extends BaseService {
   }) async {
     return executeOperation(
       operation: () async {
-        validateInput(
-          parameters: {
-            'userId': userId,
-            'videoFile': videoFile,
-            'title': title,
-            'description': description,
-          },
-          validators: {
-            'userId': (value) =>
-                value?.toString().isEmpty == true ? 'User ID is required' : '',
-            'videoFile': (value) =>
-                value == null || !File(value.path).existsSync()
-                    ? 'Valid video file is required'
-                    : '',
-            'title': (value) =>
-                value?.toString().isEmpty == true ? 'Title is required' : '',
-            'description': (value) => value?.toString().isEmpty == true
-                ? 'Description is required'
-                : '',
-          },
-        );
-
-        final videoId = _firestoreService.generateVideoId().id;
-        String? videoUrl;
-        String? audioUrl;
+        final transactionId =
+            Logger.startTransaction('video_upload_operation', {
+          'userId': userId,
+          'title': title,
+          'privacy': privacy,
+        });
 
         try {
-          // Upload video file
-          videoUrl = await _storageService.uploadVideo(
-            userId: userId,
-            videoId: videoId,
-            videoFile: videoFile,
-          );
+          // Validate input parameters
+          Logger.debug('Validating input parameters');
+          final validationErrors = <String>[];
 
-          // Extract and upload audio if needed
-          final audioFile = await _ffmpegService.extractAudio(videoFile.path);
-          audioUrl = await _storageService.uploadAudio(
-            userId: userId,
-            videoId: videoId,
-            audioFile: File(audioFile),
-          );
-
-          // Create video document
-          await _firestoreService.createVideo({
-            'id': videoId,
-            'userId': userId,
-            'title': title,
-            'description': description,
-            'videoUrl': videoUrl,
-            'audioUrl': audioUrl,
-            'thumbnailUrl': null, // Will be updated later
-            'privacy': privacy,
-            'status': 'processing',
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-          return videoId;
-        } catch (e) {
-          // Clean up any uploaded files
-          await executeMultipleCleanups(
-            cleanups: [
-              if (videoUrl != null)
-                () => _storage
-                    .ref(StoragePaths.videoFile(userId, videoId))
-                    .delete(),
-              if (audioUrl != null)
-                () => _storage
-                    .ref(StoragePaths.audioFile(userId, videoId))
-                    .delete(),
-            ],
-            cleanupName: 'uploadVideoCleanup',
-            context: {
+          validateInput(
+            parameters: {
               'userId': userId,
-              'videoId': videoId,
+              'videoFile': videoFile,
+              'title': title,
+              'description': description,
+            },
+            validators: {
+              'userId': (value) {
+                final error = value?.toString().isEmpty == true
+                    ? 'User ID is required'
+                    : '';
+                if (error.isNotEmpty) validationErrors.add(error);
+                return error;
+              },
+              'videoFile': (value) {
+                final error = value == null || !File(value.path).existsSync()
+                    ? 'Valid video file is required'
+                    : '';
+                if (error.isNotEmpty) validationErrors.add(error);
+                return error;
+              },
+              'title': (value) {
+                final error = value?.toString().isEmpty == true
+                    ? 'Title is required'
+                    : '';
+                if (error.isNotEmpty) validationErrors.add(error);
+                return error;
+              },
+              'description': (value) {
+                final error = value == null // Allow empty string, just not null
+                    ? 'Description is required'
+                    : '';
+                if (error.isNotEmpty) validationErrors.add(error);
+                return error;
+              },
             },
           );
+
+          // Validate video file size and format
+          final fileSize = await videoFile.length();
+          Logger.info('Validating video file', {
+            'size': fileSize,
+            'maxSize': VideoConstants.maxVideoSize,
+            'path': videoFile.path,
+          });
+
+          if (fileSize > VideoConstants.maxVideoSize) {
+            throw AppError(
+              title: 'File Too Large',
+              message:
+                  'Video file size must be less than ${VideoConstants.maxVideoSize ~/ (1024 * 1024)}MB',
+              category: ErrorCategory.validation,
+              severity: ErrorSeverity.warning,
+              context: {
+                'fileSize': fileSize,
+                'maxSize': VideoConstants.maxVideoSize,
+                'filePath': videoFile.path,
+              },
+            );
+          }
+
+          // Generate a single ID to use for both Firestore and Storage
+          final docRef = _firestoreService.generateVideoId();
+          final videoId = docRef.id;
+
+          Logger.info('Generated video ID', {
+            'videoId': videoId,
+            'transactionId': transactionId,
+          });
+
+          String? videoUrl;
+          String? audioUrl;
+          File? extractedAudioFile;
+
+          try {
+            // Upload video file
+            Logger.info('Starting video file upload', {
+              'videoId': videoId,
+              'size': fileSize,
+              'path': videoFile.path,
+            });
+
+            try {
+              videoUrl = await _storageService.uploadVideo(
+                userId: userId,
+                videoId: videoId,
+                videoFile: videoFile,
+              );
+              Logger.success('Video file upload completed', {
+                'videoId': videoId,
+                'url': videoUrl,
+              });
+            } catch (e) {
+              Logger.error('Video file upload failed', {
+                'error': e.toString(),
+                'videoId': videoId,
+                'path': videoFile.path,
+              });
+              if (e is FirebaseException) {
+                final errorContext = ErrorContextBuilder()
+                    .withCategory(ErrorCategory.storage)
+                    .withOperationId('uploadVideo')
+                    .withMetadata({
+                      'videoId': videoId,
+                      'userId': userId,
+                      'fileSize': fileSize,
+                      'filePath': videoFile.path,
+                    })
+                    .addBreadcrumb('Video upload failed')
+                    .build();
+
+                throw AppError(
+                  title: 'Video Upload Failed',
+                  message: 'Failed to upload video: ${e.message}',
+                  originalError: e,
+                  category: ErrorCategory.storage,
+                  severity: ErrorSeverity.error,
+                  code: e.code,
+                  context: errorContext.toMap(),
+                );
+              }
+              rethrow;
+            }
+
+            // Extract and upload audio
+            Logger.info('Starting audio extraction', {
+              'videoId': videoId,
+              'videoPath': videoFile.path,
+            });
+
+            try {
+              final audioPath =
+                  await _ffmpegService.extractAudio(videoFile.path);
+              extractedAudioFile = File(audioPath);
+
+              if (!await extractedAudioFile.exists()) {
+                throw AppError(
+                  title: 'Audio Extraction Failed',
+                  message: 'Failed to extract audio from video',
+                  category: ErrorCategory.processing,
+                  severity: ErrorSeverity.error,
+                  context: {
+                    'videoId': videoId,
+                    'videoPath': videoFile.path,
+                    'audioPath': audioPath,
+                  },
+                );
+              }
+              Logger.success('Audio extraction completed', {
+                'audioPath': audioPath,
+              });
+
+              Logger.info('Starting audio upload');
+              audioUrl = await _storageService.uploadAudio(
+                userId: userId,
+                videoId: videoId,
+                audioFile: extractedAudioFile,
+              );
+              Logger.success('Audio upload completed', {
+                'videoId': videoId,
+                'url': audioUrl,
+              });
+            } catch (e) {
+              Logger.error('Audio processing failed', {
+                'error': e.toString(),
+                'videoId': videoId,
+              });
+              rethrow;
+            }
+
+            // Create video document
+            final now = DateTime.now();
+            final video = Video(
+              id: videoId, // Use the same ID
+              userId: userId,
+              title: title,
+              description: description,
+              videoUrl: videoUrl!,
+              audioUrl: audioUrl!,
+              uploadTime: now,
+              privacy: privacy,
+              createdAt: now,
+              updatedAt: now,
+              isProcessing: true,
+            );
+
+            // Create the document with the same ID
+            await _firestoreService.createVideo(video.toJson(), docRef);
+            Logger.success('Video document created', {
+              'videoId': videoId,
+              'transactionId': transactionId,
+            });
+
+            return videoId;
+          } finally {
+            // Clean up temporary files
+            if (extractedAudioFile != null &&
+                await extractedAudioFile.exists()) {
+              await extractedAudioFile.delete();
+            }
+          }
+        } catch (e) {
+          Logger.error('Video upload failed', {
+            'error': e.toString(),
+            'transactionId': transactionId,
+          });
           rethrow;
         }
       },
@@ -169,7 +315,6 @@ class VideoService extends BaseService {
       context: {
         'userId': userId,
         'title': title,
-        'privacy': privacy,
       },
       errorCategory: ErrorCategory.storage,
     );
@@ -303,26 +448,74 @@ class VideoService extends BaseService {
                 value?.toString().isEmpty == true ? 'Video ID is required' : '',
             'title': (value) =>
                 value?.toString().isEmpty == true ? 'Title is required' : '',
-            'description': (value) => value?.toString().isEmpty == true
-                ? 'Description is required'
-                : '',
+            'description': (value) =>
+                value == null // Allow empty string, just not null
+                    ? 'Description is required'
+                    : '',
           },
         );
 
-        await _firestoreService.updateVideo(
-          videoId,
-          {
-            'title': title,
-            'description': description,
-            'updatedAt': DateTime.now(),
-          },
+        final video = Video(
+          id: videoId,
+          userId: '', // Not needed for update
+          title: title,
+          description: description,
+          videoUrl: '', // Not needed for update
+          audioUrl: '', // Not needed for update
+          uploadTime: DateTime.now(), // Not needed for update
+          createdAt: DateTime.now(), // Not needed for update
+          updatedAt: DateTime.now(),
+          isProcessing: false, // Not needed for update
         );
+
+        final updateData = {
+          'title': title,
+          'description': description,
+          'updatedAt': const TimestampConverter().toJson(DateTime.now()),
+        };
+
+        await _firestoreService.updateVideo(videoId, updateData);
       },
       operationName: 'updateVideoMetadata',
       context: {
         'videoId': videoId,
         'title': title,
       },
+      errorCategory: ErrorCategory.database,
+    );
+  }
+
+  @WithTransaction(
+    category: ErrorCategory.video,
+    middleware: [AsyncTrackingMiddleware],
+  )
+  Future<void> createVideo(Video video) async {
+    return executeOperation(
+      operation: () async {
+        final videoJson = video.toJson();
+        final safeVideoJson = toJsonSafe(videoJson);
+        await _firestoreService
+            .createVideo(safeVideoJson as Map<String, dynamic>);
+      },
+      operationName: 'createVideo',
+      context: {'videoId': video.id},
+      errorCategory: ErrorCategory.database,
+    );
+  }
+
+  @WithTransaction(
+    category: ErrorCategory.video,
+    middleware: [AsyncTrackingMiddleware],
+  )
+  Future<void> updateVideo(String videoId, Map<String, dynamic> data) async {
+    return executeOperation(
+      operation: () async {
+        final safeData = toJsonSafe(data);
+        await _firestoreService.updateVideo(
+            videoId, safeData as Map<String, dynamic>);
+      },
+      operationName: 'updateVideo',
+      context: {'videoId': videoId},
       errorCategory: ErrorCategory.database,
     );
   }

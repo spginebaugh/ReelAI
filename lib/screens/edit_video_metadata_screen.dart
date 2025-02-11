@@ -7,10 +7,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import '../models/video.dart';
+import '../models/language.dart';
 import '../services/video_service.dart';
 import '../widgets/error_text.dart';
 import '../router/route_names.dart';
 import '../services/video_processing_service.dart';
+import '../state/audio_language_provider.dart';
+import '../state/audio_player_provider.dart';
+import '../state/subtitle_controller.dart';
 
 class EditVideoMetadataScreen extends HookConsumerWidget {
   final Video video;
@@ -29,7 +33,7 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
     final errorMessage = useState<String?>(null);
     final isGeneratingTranslation = useState(false);
 
-    Future<void> generateTranslation() async {
+    Future<void> generateTranslation(LanguageCode targetLanguage) async {
       try {
         debugPrint('🎬 Starting translation generation process...');
         isGeneratingTranslation.value = true;
@@ -66,15 +70,16 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         // Log video details
         debugPrint('📹 Video details:');
         debugPrint('- Video ID: ${video.id}');
-        debugPrint('- Uploader ID: ${video.uploaderId}');
+        debugPrint('- User ID: ${video.userId}');
         debugPrint('- Video title: ${video.title}');
         debugPrint('- Created at: ${video.createdAt}');
+        debugPrint('- Target Language: ${targetLanguage.language.name}');
 
         // Verify video ownership
         debugPrint('🔍 Verifying video ownership...');
-        if (video.uploaderId != user.uid) {
+        if (video.userId != user.uid) {
           debugPrint('❌ Video ownership mismatch:');
-          debugPrint('- Video uploader: ${video.uploaderId}');
+          debugPrint('- Video owner: ${video.userId}');
           debugPrint('- Current user: ${user.uid}');
           throw Exception(
               'Not authorized to generate translation for this video');
@@ -110,9 +115,11 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         debugPrint('🚀 Calling generateTranslation function...');
         debugPrint('📤 Request payload:');
         debugPrint('- videoId: ${video.id}');
+        debugPrint('- targetLanguage: ${targetLanguage.code}');
 
         final result = await callable.call<Map<String, dynamic>>({
           'videoId': video.id,
+          'targetLanguage': targetLanguage.code,
         });
 
         debugPrint('✅ Function call completed');
@@ -123,12 +130,31 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
         if (result.data['success'] == true) {
           debugPrint('🎉 Translation generated successfully');
           if (context.mounted) {
+            // Show success message
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Translation generated successfully'),
+              SnackBar(
+                content: Text(
+                    '${targetLanguage.language.name} translation generated successfully'),
                 backgroundColor: Colors.green,
               ),
             );
+
+            // Optimistically update available languages
+            debugPrint('🔄 Updating available languages...');
+
+            // Refresh audio languages
+            await ref
+                .read(audioLanguageControllerProvider(video.id).notifier)
+                .refresh();
+
+            // Refresh subtitle languages
+            await ref
+                .read(subtitleControllerProvider.notifier)
+                .loadAvailableLanguages(video.id, video.userId);
+
+            // Navigate back to edit screen
+            debugPrint('🔄 Navigating back to refresh video state...');
+            Navigator.of(context).pop();
           }
         } else {
           debugPrint('⚠️ Function returned success: false');
@@ -221,7 +247,7 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
 
         // Delete the video from the server
         await ref.read(videoServiceProvider).deleteVideo(
-              userId: video.uploaderId,
+              userId: video.userId,
               videoId: video.id,
             );
 
@@ -287,26 +313,56 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      FilledButton.icon(
-                        onPressed: isGeneratingTranslation.value
-                            ? null
-                            : () => generateTranslation(),
-                        icon: isGeneratingTranslation.value
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.translate),
-                        label: Text(
-                          isGeneratingTranslation.value
-                              ? 'Generating Translation...'
-                              : 'Translate Audio',
-                        ),
+                      Text(
+                        'Generate Translation',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<LanguageCode>(
+                        decoration: const InputDecoration(
+                          labelText: 'Select Language',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.translate),
+                        ),
+                        dropdownColor: Theme.of(context).colorScheme.surface,
+                        items: LanguageCode.values.map((language) {
+                          final lang = language.language;
+                          return DropdownMenuItem(
+                            value: language,
+                            child: Row(
+                              children: [
+                                if (lang.flag != null) ...[
+                                  Text(lang.flag!),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  lang.name,
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: isGeneratingTranslation.value
+                            ? null
+                            : (language) {
+                                if (language != null) {
+                                  generateTranslation(language);
+                                }
+                              },
+                      ),
+                      if (isGeneratingTranslation.value)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 16.0),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
                     ],
                   ),
                 ],

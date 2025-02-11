@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +9,7 @@ import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
 import '../services/video_processing_service.dart';
 import '../utils/storage_paths.dart';
+import '../utils/json_utils.dart';
 import 'auth_provider.dart';
 import 'audio_player_provider.dart';
 import 'subtitle_controller.dart';
@@ -139,7 +141,25 @@ class VideoEditController extends _$VideoEditController {
       });
 
       final tempFile = await _videoService.downloadVideo(video.videoUrl);
-      await _initializeVideoPlayer(tempFile);
+
+      // Log the state before initialization
+      Logger.debug('State before initialization', {
+        'tempFile': tempFile.path,
+        'isInitialized': state.value?.isInitialized,
+        'hasVideoController': state.value?.videoPlayerController != null,
+        'hasChewieController': state.value?.chewieController != null,
+      });
+
+      try {
+        await _initializeVideoPlayer(tempFile);
+      } catch (e, st) {
+        Logger.error('Failed to initialize video player', {
+          'error': e.toString(),
+          'stackTrace': st.toString(),
+          'tempFile': tempFile.path,
+        });
+        rethrow;
+      }
 
       // Get subtitle URL
       final storage = FirebaseStorage.instance;
@@ -155,29 +175,85 @@ class VideoEditController extends _$VideoEditController {
         subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
         Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
       } catch (e) {
-        Logger.warning('No subtitles found', {'error': e});
+        Logger.warning('No subtitles found', {
+          'error': e.toString(),
+          'path': subtitlePath,
+        });
       }
 
       // Initialize audio and subtitles
       final videoPlayerController = state.value!.videoPlayerController!;
-      await _initializeAudioSystem(videoPlayerController, video.id);
+
+      try {
+        await _initializeAudioSystem(videoPlayerController, video.id);
+      } catch (e, st) {
+        Logger.error('Failed to initialize audio system', {
+          'error': e.toString(),
+          'stackTrace': st.toString(),
+          'videoId': video.id,
+        });
+        rethrow;
+      }
 
       if (subtitleUrl != null) {
-        await _initializeSubtitleSystem(
-          videoPlayerController,
-          video.id,
-          user.uid,
-          subtitleUrl,
-        );
+        try {
+          await _initializeSubtitleSystem(
+            videoPlayerController,
+            video.id,
+            user.uid,
+            subtitleUrl,
+          );
+        } catch (e, st) {
+          Logger.error('Failed to initialize subtitle system', {
+            'error': e.toString(),
+            'stackTrace': st.toString(),
+            'subtitleUrl': subtitleUrl,
+          });
+          rethrow;
+        }
       }
 
       Logger.success('Video initialization completed successfully');
     } catch (e, st) {
+      // Log the full state when error occurs
+      try {
+        final currentState = state.value;
+        Logger.error('Video initialization failed - Current State', {
+          'isProcessing': currentState?.isProcessing,
+          'isLoading': currentState?.isLoading,
+          'isPlaying': currentState?.isPlaying,
+          'isInitialized': currentState?.isInitialized,
+          'currentMode': currentState?.currentMode.toString(),
+          'startValue': currentState?.startValue,
+          'endValue': currentState?.endValue,
+          'brightness': currentState?.brightness,
+          'selectedFilter': currentState?.selectedFilter.toString(),
+          'tempVideoFile': currentState?.tempVideoFile?.path,
+          'currentPreviewPath': currentState?.currentPreviewPath,
+          'processedVideoPath': currentState?.processedVideoPath,
+          'hasVideoController': currentState?.videoPlayerController != null,
+          'hasChewieController': currentState?.chewieController != null,
+        });
+      } catch (logError) {
+        Logger.error('Failed to log state during error', {
+          'logError': logError.toString(),
+        });
+      }
+
+      if (e is JsonUnsupportedObjectError) {
+        Logger.error('JSON Serialization Error Details', {
+          'unsupportedObject': e.unsupportedObject?.runtimeType.toString(),
+          'cause': e.cause,
+          'stackTrace': st.toString(),
+        });
+      }
+
       final appError = ErrorHandler.handleError(e, st);
       Logger.error('Error initializing video', {
         'error': appError.toString(),
-        'originalError': e,
-        'stackTrace': st,
+        'originalError': e.toString(),
+        'errorType': e.runtimeType.toString(),
+        'stackTrace': st.toString(),
       });
       state = AsyncValue.error(appError, st);
     }

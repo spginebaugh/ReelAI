@@ -202,7 +202,7 @@ class HomeScreen extends ConsumerWidget {
                                     videoFile: videoFile,
                                     thumbnailFile: thumbnailFile,
                                     title: 'Untitled Video',
-                                    description: '',
+                                    description: 'Video uploaded from device',
                                   );
 
                           final video = await ref

@@ -5,6 +5,7 @@ import 'firestore_service.dart';
 import 'user_storage_service.dart';
 import 'base_service.dart';
 import '../utils/error_handler.dart';
+import '../utils/json_utils.dart';
 
 part 'user_service.g.dart';
 
@@ -27,7 +28,9 @@ class UserService extends BaseService {
   // Profile Management
   Future<User?> getUser(String userId) {
     return executeOperation(
-      operation: () => _firestoreService.getUser(userId),
+      operation: () async {
+        return _firestoreService.getUser(userId);
+      },
       operationName: 'getUser',
       context: {'userId': userId},
       errorCategory: ErrorCategory.database,
@@ -75,6 +78,34 @@ class UserService extends BaseService {
         'filePath': imageFile.path,
       },
       errorCategory: ErrorCategory.storage,
+    );
+  }
+
+  Future<void> updateUser(String userId, Map<String, dynamic> data) async {
+    await executeOperation(
+      operation: () async {
+        validateInput(
+          parameters: {
+            'userId': userId,
+            'data': data,
+          },
+          validators: {
+            'userId': (value) =>
+                value?.toString().isEmpty == true ? 'User ID is required' : '',
+            'data': (value) => value == null || (value as Map).isEmpty
+                ? 'Update data is required'
+                : '',
+          },
+        );
+
+        await _firestoreService.updateUser(userId, data);
+      },
+      operationName: 'updateUser',
+      context: {
+        'userId': userId,
+        'updateFields': data.keys.toList(),
+      },
+      errorCategory: ErrorCategory.database,
     );
   }
 

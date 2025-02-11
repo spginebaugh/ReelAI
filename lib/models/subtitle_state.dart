@@ -26,6 +26,7 @@ class SubtitleState with _$SubtitleState {
     SubtitleCue? currentCue,
     @Default('english') String language,
     @Default(true) bool isVisible,
+    @Default([]) List<String> availableLanguages,
     @JsonKey(ignore: true) TextStyle? style,
   }) = _SubtitleState;
 

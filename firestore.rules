@@ -34,5 +34,41 @@ service cloud.firestore {
       
       allow write: if isValidUser();
     }
+
+    // Videos collection rules
+    match /videos/{videoId} {
+      allow read: if true;  // Public read access for videos
+      
+      // Validate video document fields
+      function isValidVideo() {
+        let video = request.resource.data;
+        return video.userId is string &&
+               video.title is string &&
+               video.title.size() > 0 &&
+               (video.description == null || video.description is string) &&
+               video.videoUrl is string &&
+               video.audioUrl is string &&
+               (video.thumbnailUrl == null || video.thumbnailUrl is string) &&
+               (video.uploadTime is timestamp || video.uploadTime == request.time) &&
+               (video.createdAt is timestamp || video.createdAt == request.time) &&
+               (video.updatedAt is timestamp || video.updatedAt == request.time) &&
+               video.privacy in ['public', 'private'] &&
+               video.likesCount is number &&
+               video.commentsCount is number &&
+               video.viewsCount is number &&
+               video.isProcessing is bool &&
+               video.isDeleted is bool;
+      }
+
+      allow create: if isSignedIn() && 
+                      request.auth.uid == request.resource.data.userId && 
+                      isValidVideo();
+      
+      allow update: if isSignedIn() && 
+                      request.auth.uid == resource.data.userId &&
+                      isValidVideo();
+                      
+      allow delete: if false;  // Soft delete only through isDeleted field
+    }
   }
 } 

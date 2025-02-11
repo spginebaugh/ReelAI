@@ -17,7 +17,13 @@ class SubtitleControls extends ConsumerWidget {
     final subtitleState = ref.watch(subtitleControllerProvider);
     final subtitleController = ref.watch(subtitleControllerProvider.notifier);
 
-    return PopupMenuButton<String?>(
+    debugPrint('🎬 SubtitleControls: Building with state:');
+    debugPrint('   - isVisible: ${subtitleState.isVisible}');
+    debugPrint('   - current language: ${subtitleState.language}');
+    debugPrint(
+        '   - available languages: ${subtitleController.availableLanguages}');
+
+    return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
       icon: Icon(
@@ -27,16 +33,21 @@ class SubtitleControls extends ConsumerWidget {
             : null,
       ),
       onSelected: (language) async {
-        if (language == null) {
+        debugPrint('🎬 SubtitleControls: Language selected: $language');
+        if (language == 'OFF') {
           // Toggle visibility
+          debugPrint('🎬 SubtitleControls: Toggling visibility');
           ref.read(subtitleControllerProvider.notifier).toggleVisibility();
         } else {
           // Switch language
+          debugPrint('🎬 SubtitleControls: Switching to language: $language');
           try {
             await ref
                 .read(subtitleControllerProvider.notifier)
                 .loadLanguage(video.id, language);
+            debugPrint('🎬 SubtitleControls: Successfully switched language');
           } catch (e) {
+            debugPrint('❌ SubtitleControls: Failed to switch language: $e');
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -48,32 +59,14 @@ class SubtitleControls extends ConsumerWidget {
           }
         }
       },
-      itemBuilder: (context) => [
-        // Toggle visibility option
-        PopupMenuItem<String?>(
-          value: null,
-          child: Row(
-            children: [
-              if (!subtitleState.isVisible)
-                Icon(
-                  Icons.check,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              else
-                const SizedBox(width: 18),
-              const SizedBox(width: 8),
-              const Text('Hide Subtitles'),
-            ],
-          ),
-        ),
-        // Language options
-        ...subtitleController.availableLanguages.map(
-          (lang) => PopupMenuItem<String?>(
-            value: lang,
+      itemBuilder: (context) {
+        final items = [
+          // Toggle visibility option
+          PopupMenuItem<String>(
+            value: 'OFF',
             child: Row(
               children: [
-                if (subtitleState.isVisible && subtitleState.language == lang)
+                if (!subtitleState.isVisible)
                   Icon(
                     Icons.check,
                     size: 18,
@@ -82,12 +75,35 @@ class SubtitleControls extends ConsumerWidget {
                 else
                   const SizedBox(width: 18),
                 const SizedBox(width: 8),
-                Text(getLanguageDisplayName(lang)),
+                const Text('Off'),
               ],
             ),
           ),
-        ),
-      ],
+          // Language options
+          ...subtitleController.availableLanguages.map(
+            (lang) => PopupMenuItem<String>(
+              value: lang,
+              child: Row(
+                children: [
+                  // Only show checkmark if subtitles are visible and this is the current language
+                  if (subtitleState.isVisible && subtitleState.language == lang)
+                    Icon(
+                      Icons.check,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(getLanguageDisplayName(lang)),
+                ],
+              ),
+            ),
+          ),
+        ];
+        debugPrint('🎬 SubtitleControls: Built ${items.length} menu items');
+        return items;
+      },
     );
   }
 }

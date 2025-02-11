@@ -34,9 +34,11 @@ mixin _$VideoEditState {
   File? get tempVideoFile => throw _privateConstructorUsedError;
   String? get currentPreviewPath => throw _privateConstructorUsedError;
   String? get processedVideoPath => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
   @VideoPlayerControllerConverter()
   VideoPlayerController? get videoPlayerController =>
       throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
   @ChewieControllerConverter()
   ChewieController? get chewieController => throw _privateConstructorUsedError;
 
@@ -70,9 +72,12 @@ abstract class $VideoEditStateCopyWith<$Res> {
       @FileConverter() File? tempVideoFile,
       String? currentPreviewPath,
       String? processedVideoPath,
+      @JsonKey(ignore: true)
       @VideoPlayerControllerConverter()
       VideoPlayerController? videoPlayerController,
-      @ChewieControllerConverter() ChewieController? chewieController});
+      @JsonKey(ignore: true)
+      @ChewieControllerConverter()
+      ChewieController? chewieController});
 
   $FilterOptionCopyWith<$Res> get selectedFilter;
 }
@@ -205,9 +210,12 @@ abstract class _$$VideoEditStateImplCopyWith<$Res>
       @FileConverter() File? tempVideoFile,
       String? currentPreviewPath,
       String? processedVideoPath,
+      @JsonKey(ignore: true)
       @VideoPlayerControllerConverter()
       VideoPlayerController? videoPlayerController,
-      @ChewieControllerConverter() ChewieController? chewieController});
+      @JsonKey(ignore: true)
+      @ChewieControllerConverter()
+      ChewieController? chewieController});
 
   @override
   $FilterOptionCopyWith<$Res> get selectedFilter;
@@ -324,8 +332,12 @@ class _$VideoEditStateImpl implements _VideoEditState {
       @FileConverter() this.tempVideoFile,
       this.currentPreviewPath,
       this.processedVideoPath,
-      @VideoPlayerControllerConverter() this.videoPlayerController,
-      @ChewieControllerConverter() this.chewieController})
+      @JsonKey(ignore: true)
+      @VideoPlayerControllerConverter()
+      this.videoPlayerController,
+      @JsonKey(ignore: true)
+      @ChewieControllerConverter()
+      this.chewieController})
       : _availableFilters = availableFilters;
 
   factory _$VideoEditStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -366,9 +378,11 @@ class _$VideoEditStateImpl implements _VideoEditState {
   @override
   final String? processedVideoPath;
   @override
+  @JsonKey(ignore: true)
   @VideoPlayerControllerConverter()
   final VideoPlayerController? videoPlayerController;
   @override
+  @JsonKey(ignore: true)
   @ChewieControllerConverter()
   final ChewieController? chewieController;
 
@@ -466,8 +480,10 @@ abstract class _VideoEditState implements VideoEditState {
       @FileConverter() final File? tempVideoFile,
       final String? currentPreviewPath,
       final String? processedVideoPath,
+      @JsonKey(ignore: true)
       @VideoPlayerControllerConverter()
       final VideoPlayerController? videoPlayerController,
+      @JsonKey(ignore: true)
       @ChewieControllerConverter()
       final ChewieController? chewieController}) = _$VideoEditStateImpl;
 
@@ -502,9 +518,11 @@ abstract class _VideoEditState implements VideoEditState {
   @override
   String? get processedVideoPath;
   @override
+  @JsonKey(ignore: true)
   @VideoPlayerControllerConverter()
   VideoPlayerController? get videoPlayerController;
   @override
+  @JsonKey(ignore: true)
   @ChewieControllerConverter()
   ChewieController? get chewieController;
 

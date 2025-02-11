@@ -5,11 +5,11 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "uploaderId",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "uploadTime",
+          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ]

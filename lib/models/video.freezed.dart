@@ -21,7 +21,7 @@ Video _$VideoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$Video {
   String get id => throw _privateConstructorUsedError;
-  String get uploaderId => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   String get videoUrl => throw _privateConstructorUsedError;
@@ -32,6 +32,7 @@ mixin _$Video {
   String get privacy => throw _privateConstructorUsedError;
   int get likesCount => throw _privateConstructorUsedError;
   int get commentsCount => throw _privateConstructorUsedError;
+  int get viewsCount => throw _privateConstructorUsedError;
   bool get isProcessing => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -55,7 +56,7 @@ abstract class $VideoCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      String uploaderId,
+      String userId,
       String title,
       String? description,
       String videoUrl,
@@ -65,6 +66,7 @@ abstract class $VideoCopyWith<$Res> {
       String privacy,
       int likesCount,
       int commentsCount,
+      int viewsCount,
       bool isProcessing,
       @TimestampConverter() DateTime createdAt,
       @TimestampConverter() DateTime updatedAt,
@@ -87,7 +89,7 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
   @override
   $Res call({
     Object? id = null,
-    Object? uploaderId = null,
+    Object? userId = null,
     Object? title = null,
     Object? description = freezed,
     Object? videoUrl = null,
@@ -97,6 +99,7 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
     Object? privacy = null,
     Object? likesCount = null,
     Object? commentsCount = null,
+    Object? viewsCount = null,
     Object? isProcessing = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -107,9 +110,9 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      uploaderId: null == uploaderId
-          ? _value.uploaderId
-          : uploaderId // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
               as String,
       title: null == title
           ? _value.title
@@ -146,6 +149,10 @@ class _$VideoCopyWithImpl<$Res, $Val extends Video>
       commentsCount: null == commentsCount
           ? _value.commentsCount
           : commentsCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      viewsCount: null == viewsCount
+          ? _value.viewsCount
+          : viewsCount // ignore: cast_nullable_to_non_nullable
               as int,
       isProcessing: null == isProcessing
           ? _value.isProcessing
@@ -176,7 +183,7 @@ abstract class _$$VideoImplCopyWith<$Res> implements $VideoCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      String uploaderId,
+      String userId,
       String title,
       String? description,
       String videoUrl,
@@ -186,6 +193,7 @@ abstract class _$$VideoImplCopyWith<$Res> implements $VideoCopyWith<$Res> {
       String privacy,
       int likesCount,
       int commentsCount,
+      int viewsCount,
       bool isProcessing,
       @TimestampConverter() DateTime createdAt,
       @TimestampConverter() DateTime updatedAt,
@@ -206,7 +214,7 @@ class __$$VideoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? uploaderId = null,
+    Object? userId = null,
     Object? title = null,
     Object? description = freezed,
     Object? videoUrl = null,
@@ -216,6 +224,7 @@ class __$$VideoImplCopyWithImpl<$Res>
     Object? privacy = null,
     Object? likesCount = null,
     Object? commentsCount = null,
+    Object? viewsCount = null,
     Object? isProcessing = null,
     Object? createdAt = null,
     Object? updatedAt = null,
@@ -226,9 +235,9 @@ class __$$VideoImplCopyWithImpl<$Res>
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
               as String,
-      uploaderId: null == uploaderId
-          ? _value.uploaderId
-          : uploaderId // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
               as String,
       title: null == title
           ? _value.title
@@ -266,6 +275,10 @@ class __$$VideoImplCopyWithImpl<$Res>
           ? _value.commentsCount
           : commentsCount // ignore: cast_nullable_to_non_nullable
               as int,
+      viewsCount: null == viewsCount
+          ? _value.viewsCount
+          : viewsCount // ignore: cast_nullable_to_non_nullable
+              as int,
       isProcessing: null == isProcessing
           ? _value.isProcessing
           : isProcessing // ignore: cast_nullable_to_non_nullable
@@ -287,12 +300,11 @@ class __$$VideoImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _$VideoImpl extends _Video {
   const _$VideoImpl(
       {required this.id,
-      required this.uploaderId,
+      required this.userId,
       required this.title,
       this.description,
       required this.videoUrl,
@@ -302,6 +314,7 @@ class _$VideoImpl extends _Video {
       this.privacy = 'public',
       this.likesCount = 0,
       this.commentsCount = 0,
+      this.viewsCount = 0,
       this.isProcessing = false,
       @TimestampConverter() required this.createdAt,
       @TimestampConverter() required this.updatedAt,
@@ -314,7 +327,7 @@ class _$VideoImpl extends _Video {
   @override
   final String id;
   @override
-  final String uploaderId;
+  final String userId;
   @override
   final String title;
   @override
@@ -339,6 +352,9 @@ class _$VideoImpl extends _Video {
   final int commentsCount;
   @override
   @JsonKey()
+  final int viewsCount;
+  @override
+  @JsonKey()
   final bool isProcessing;
   @override
   @TimestampConverter()
@@ -352,7 +368,7 @@ class _$VideoImpl extends _Video {
 
   @override
   String toString() {
-    return 'Video(id: $id, uploaderId: $uploaderId, title: $title, description: $description, videoUrl: $videoUrl, audioUrl: $audioUrl, thumbnailUrl: $thumbnailUrl, uploadTime: $uploadTime, privacy: $privacy, likesCount: $likesCount, commentsCount: $commentsCount, isProcessing: $isProcessing, createdAt: $createdAt, updatedAt: $updatedAt, isDeleted: $isDeleted)';
+    return 'Video(id: $id, userId: $userId, title: $title, description: $description, videoUrl: $videoUrl, audioUrl: $audioUrl, thumbnailUrl: $thumbnailUrl, uploadTime: $uploadTime, privacy: $privacy, likesCount: $likesCount, commentsCount: $commentsCount, viewsCount: $viewsCount, isProcessing: $isProcessing, createdAt: $createdAt, updatedAt: $updatedAt, isDeleted: $isDeleted)';
   }
 
   @override
@@ -361,8 +377,7 @@ class _$VideoImpl extends _Video {
         (other.runtimeType == runtimeType &&
             other is _$VideoImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.uploaderId, uploaderId) ||
-                other.uploaderId == uploaderId) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.description, description) ||
                 other.description == description) &&
@@ -379,6 +394,8 @@ class _$VideoImpl extends _Video {
                 other.likesCount == likesCount) &&
             (identical(other.commentsCount, commentsCount) ||
                 other.commentsCount == commentsCount) &&
+            (identical(other.viewsCount, viewsCount) ||
+                other.viewsCount == viewsCount) &&
             (identical(other.isProcessing, isProcessing) ||
                 other.isProcessing == isProcessing) &&
             (identical(other.createdAt, createdAt) ||
@@ -394,7 +411,7 @@ class _$VideoImpl extends _Video {
   int get hashCode => Object.hash(
       runtimeType,
       id,
-      uploaderId,
+      userId,
       title,
       description,
       videoUrl,
@@ -404,6 +421,7 @@ class _$VideoImpl extends _Video {
       privacy,
       likesCount,
       commentsCount,
+      viewsCount,
       isProcessing,
       createdAt,
       updatedAt,
@@ -428,7 +446,7 @@ class _$VideoImpl extends _Video {
 abstract class _Video extends Video {
   const factory _Video(
       {required final String id,
-      required final String uploaderId,
+      required final String userId,
       required final String title,
       final String? description,
       required final String videoUrl,
@@ -438,6 +456,7 @@ abstract class _Video extends Video {
       final String privacy,
       final int likesCount,
       final int commentsCount,
+      final int viewsCount,
       final bool isProcessing,
       @TimestampConverter() required final DateTime createdAt,
       @TimestampConverter() required final DateTime updatedAt,
@@ -449,7 +468,7 @@ abstract class _Video extends Video {
   @override
   String get id;
   @override
-  String get uploaderId;
+  String get userId;
   @override
   String get title;
   @override
@@ -469,6 +488,8 @@ abstract class _Video extends Video {
   int get likesCount;
   @override
   int get commentsCount;
+  @override
+  int get viewsCount;
   @override
   bool get isProcessing;
   @override

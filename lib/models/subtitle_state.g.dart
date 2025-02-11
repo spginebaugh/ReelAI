@@ -31,6 +31,10 @@ _$SubtitleStateImpl _$$SubtitleStateImplFromJson(Map<String, dynamic> json) =>
           : SubtitleCue.fromJson(json['currentCue'] as Map<String, dynamic>),
       language: json['language'] as String? ?? 'english',
       isVisible: json['isVisible'] as bool? ?? true,
+      availableLanguages: (json['availableLanguages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
@@ -39,6 +43,7 @@ Map<String, dynamic> _$$SubtitleStateImplToJson(_$SubtitleStateImpl instance) =>
       'currentCue': instance.currentCue,
       'language': instance.language,
       'isVisible': instance.isVisible,
+      'availableLanguages': instance.availableLanguages,
     };
 
 _$SubtitleCueImpl _$$SubtitleCueImplFromJson(Map<String, dynamic> json) =>

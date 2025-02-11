@@ -17,9 +17,8 @@ part 'subtitle_controller.g.dart';
 class SubtitleController extends _$SubtitleController {
   Timer? _updateTimer;
   VideoPlayerController? _videoController;
-  List<String> _availableLanguages = [];
 
-  List<String> get availableLanguages => _availableLanguages;
+  List<String> get availableLanguages => state.availableLanguages;
 
   @override
   SubtitleState build() {
@@ -55,8 +54,10 @@ class SubtitleController extends _$SubtitleController {
       throw Exception('Failed to load subtitles');
     }
 
+    // Explicitly decode the response body as UTF-8
+    final String decodedContent = utf8.decode(response.bodyBytes);
     final List<SubtitleCue> subtitles = [];
-    final lines = const LineSplitter().convert(response.body);
+    final lines = const LineSplitter().convert(decodedContent);
 
     int i = 0;
     while (i < lines.length) {
@@ -94,6 +95,12 @@ class SubtitleController extends _$SubtitleController {
 
   void _startPositionTracking() {
     _updateTimer?.cancel();
+
+    // Don't start tracking if subtitles are off
+    if (!state.isVisible) {
+      return;
+    }
+
     _updateTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       if (_videoController == null || !_videoController!.value.isInitialized) {
         return;
@@ -143,7 +150,17 @@ class SubtitleController extends _$SubtitleController {
   }
 
   void toggleVisibility() {
-    state = state.copyWith(isVisible: !state.isVisible);
+    state = state.copyWith(
+      isVisible: !state.isVisible,
+      currentCue: null, // Always clear the current subtitle when toggling
+    );
+
+    // If turning off, cancel the timer
+    if (!state.isVisible) {
+      _updateTimer?.cancel();
+    } else {
+      _startPositionTracking();
+    }
   }
 
   void updateStyle(TextStyle style) {
@@ -167,11 +184,15 @@ class SubtitleController extends _$SubtitleController {
       // Load the subtitles for this language
       final subtitles = await _loadSubtitlesFromUrl(subtitleUrl);
 
-      // Update state with new subtitles and language
+      // Update state with new subtitles and language, and turn visibility on
       state = state.copyWith(
         subtitles: subtitles,
         language: language,
+        isVisible: true, // Turn visibility on when loading a language
       );
+
+      // Restart position tracking since we turned visibility on
+      _startPositionTracking();
     } catch (e) {
       debugPrint('Error loading subtitles: $e');
       rethrow;
@@ -187,27 +208,54 @@ class SubtitleController extends _$SubtitleController {
       debugPrint('🎬 Subtitles: Listing files in $subtitlesDir');
       final result = await storage.ref(subtitlesDir).listAll();
 
-      final languages = result.items
-          .where((ref) => ref.name.endsWith('.vtt'))
+      debugPrint('🎬 Subtitles: Found ${result.items.length} files:');
+      for (final ref in result.items) {
+        debugPrint('   - ${ref.name}');
+      }
+
+      debugPrint('🎬 Subtitles: Filtering for .vtt files...');
+      final vttFiles =
+          result.items.where((ref) => ref.name.endsWith('.vtt')).toList();
+      debugPrint('🎬 Subtitles: Found ${vttFiles.length} .vtt files:');
+      for (final ref in vttFiles) {
+        debugPrint('   - ${ref.name}');
+      }
+
+      debugPrint('🎬 Subtitles: Extracting languages...');
+      final languages = vttFiles
           .map((ref) {
             final parts = ref.name.split('_');
-            if (parts.length != 2) return null;
-            return parts[1].split('.')[0];
+            debugPrint('   - Processing ${ref.name}:');
+            debugPrint('     * Parts: ${parts.join(" | ")}');
+            if (parts.length != 2) {
+              debugPrint('     * Skipped: Wrong number of parts');
+              return null;
+            }
+            final lang = parts[1].split('.')[0];
+            debugPrint('     * Extracted language: $lang');
+            return lang;
           })
           .where((lang) => lang != null)
           .map((lang) => lang!)
           .toList();
 
+      debugPrint('🎬 Subtitles: Extracted languages: $languages');
+
       // Ensure English is first if available
       if (languages.contains('english')) {
         languages.remove('english');
         languages.insert(0, 'english');
+        debugPrint('🎬 Subtitles: Reordered with English first: $languages');
       }
 
-      _availableLanguages = languages;
-      debugPrint('✅ Subtitles: Found ${languages.length} available languages');
-    } catch (e) {
-      debugPrint('❌ Subtitles: Error loading available languages: $e');
+      // Update state with available languages
+      state = state.copyWith(availableLanguages: languages);
+      debugPrint(
+          '🎬 Subtitles: Updated state with languages: ${state.availableLanguages}');
+    } catch (e, st) {
+      debugPrint('❌ Subtitles: Error loading available languages:');
+      debugPrint('Error: $e');
+      debugPrint('Stack trace: $st');
       rethrow;
     }
   }

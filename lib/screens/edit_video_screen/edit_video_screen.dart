@@ -6,6 +6,7 @@ import '../../models/video.dart';
 import '../../models/video_edit_state.dart';
 import '../../router/route_names.dart';
 import '../../state/video_edit_provider.dart';
+import '../../state/audio_player_provider.dart';
 import 'widgets/video_player_section.dart';
 import 'widgets/right_toolbar/right_toolbar.dart';
 import 'widgets/editing_controls/editing_controls.dart';
@@ -26,10 +27,35 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
       SystemUiMode.immersiveSticky,
       overlays: [SystemUiOverlay.top],
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(videoEditControllerProvider.notifier)
-          .initializeVideo(widget.video);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint('🎬 EditVideoScreen: Initializing video...');
+      try {
+        await ref
+            .read(videoEditControllerProvider.notifier)
+            .initializeVideo(widget.video);
+        debugPrint('✅ EditVideoScreen: Video initialized successfully');
+
+        // Verify audio initialization
+        final editState = ref.read(videoEditControllerProvider).value;
+        if (editState != null && editState.chewieController != null) {
+          debugPrint('🎬 EditVideoScreen: Verifying audio system...');
+          await ref.read(audioPlayerControllerProvider.notifier).initialize(
+                editState.chewieController!.videoPlayerController,
+              );
+          debugPrint('🎬 EditVideoScreen: Switching to English audio...');
+          await ref.read(audioPlayerControllerProvider.notifier).switchLanguage(
+                widget.video.id,
+                'english',
+              );
+          debugPrint(
+              '✅ EditVideoScreen: Audio system initialized successfully');
+        } else {
+          debugPrint(
+              '❌ EditVideoScreen: Video controllers not properly initialized');
+        }
+      } catch (e) {
+        debugPrint('❌ EditVideoScreen: Error during initialization: $e');
+      }
     });
   }
 

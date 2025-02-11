@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
+import 'json_utils.dart';
 
 enum LogLevel {
   debug('🐛'),
@@ -146,7 +147,8 @@ class Logger {
 
   static String _formatLogData(Map<String, dynamic> data) {
     const encoder = JsonEncoder.withIndent('  ');
-    return _divider + '\n' + encoder.convert(data) + '\n' + _divider;
+    final safeData = toJsonSafe(data);
+    return _divider + '\n' + encoder.convert(safeData) + '\n' + _divider;
   }
 
   // Logging methods with transaction and context support

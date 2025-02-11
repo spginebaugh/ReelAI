@@ -145,7 +145,7 @@ class SettingsScreen extends HookConsumerWidget {
                                     newBio != user.bio) {
                                   try {
                                     await ref
-                                        .read(currentUserProvider.notifier)
+                                        .read(userNotifierProvider.notifier)
                                         .updateProfile(
                                           username: newUsername,
                                           bio: newBio.isEmpty ? null : newBio,

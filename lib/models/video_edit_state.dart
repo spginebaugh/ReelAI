@@ -67,9 +67,12 @@ class VideoEditState with _$VideoEditState {
     @FileConverter() File? tempVideoFile,
     String? currentPreviewPath,
     String? processedVideoPath,
+    @JsonKey(ignore: true)
     @VideoPlayerControllerConverter()
     VideoPlayerController? videoPlayerController,
-    @ChewieControllerConverter() ChewieController? chewieController,
+    @JsonKey(ignore: true)
+    @ChewieControllerConverter()
+    ChewieController? chewieController,
   }) = _VideoEditState;
 
   factory VideoEditState.initial() => VideoEditState(

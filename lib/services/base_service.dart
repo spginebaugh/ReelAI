@@ -176,15 +176,21 @@ abstract class BaseService {
           ? ErrorContextBuilder.fromTransaction(currentTransaction)
           : ErrorContextBuilder();
 
-      throw errorContext
-        ..withCategory(ErrorCategory.validation)
-        ..withSeverity(ErrorSeverity.warning)
-        ..withValidationErrors(errors.values.toList())
-        ..withState({'parameters': parameters})
-        ..buildError(
-          title: 'Validation Error',
-          message: 'Invalid parameters provided',
-        );
+      // Build the error context first
+      final context = errorContext
+          .withCategory(ErrorCategory.validation)
+          .withSeverity(ErrorSeverity.warning)
+          .withValidationErrors(errors.values.toList())
+          .withState({'parameters': parameters}).build();
+
+      // Then throw a properly constructed AppError
+      throw AppError(
+        title: 'Validation Error',
+        message: 'Invalid parameters provided: ${errors.values.join(", ")}',
+        category: ErrorCategory.validation,
+        severity: ErrorSeverity.warning,
+        context: context.toMap(),
+      );
     }
   }
 
@@ -196,14 +202,20 @@ abstract class BaseService {
           ? ErrorContextBuilder.fromTransaction(currentTransaction)
           : ErrorContextBuilder();
 
-      throw errorContext
-        ..withCategory(ErrorCategory.validation)
-        ..withSeverity(ErrorSeverity.warning)
-        ..withValidationErrors(['$paramName is required'])
-        ..buildError(
-          title: 'Validation Error',
-          message: '$paramName is required',
-        );
+      // Build the error context first
+      final context = errorContext
+          .withCategory(ErrorCategory.validation)
+          .withSeverity(ErrorSeverity.warning)
+          .withValidationErrors(['$paramName is required']).build();
+
+      // Then throw a properly constructed AppError
+      throw AppError(
+        title: 'Validation Error',
+        message: '$paramName is required',
+        category: ErrorCategory.validation,
+        severity: ErrorSeverity.warning,
+        context: context.toMap(),
+      );
     }
     return value;
   }

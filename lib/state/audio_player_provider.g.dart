@@ -3,11 +3,39 @@
 part of 'audio_player_provider.dart';
 
 // **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$AudioPlayerStateImpl _$$AudioPlayerStateImplFromJson(
+        Map<String, dynamic> json) =>
+    _$AudioPlayerStateImpl(
+      audioPlayer: _audioPlayerFromJson(json['audioPlayer']),
+      isInitialized: json['isInitialized'] as bool? ?? false,
+      isPlaying: json['isPlaying'] as bool? ?? false,
+      position: json['position'] == null
+          ? Duration.zero
+          : _durationFromJson((json['position'] as num).toInt()),
+      currentLanguage: json['currentLanguage'] as String? ?? 'english',
+      isSyncing: json['isSyncing'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$$AudioPlayerStateImplToJson(
+        _$AudioPlayerStateImpl instance) =>
+    <String, dynamic>{
+      'audioPlayer': toJsonSafe(instance.audioPlayer),
+      'isInitialized': instance.isInitialized,
+      'isPlaying': instance.isPlaying,
+      'position': _durationToJson(instance.position),
+      'currentLanguage': instance.currentLanguage,
+      'isSyncing': instance.isSyncing,
+    };
+
+// **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
 String _$audioPlayerControllerHash() =>
-    r'492ea4e7c678f29ef622eb6ca5129c641e68eca1';
+    r'8fa5e62389636501bb194d6a782fd596ad908837';
 
 /// Provider that manages audio playback and synchronization with video
 ///

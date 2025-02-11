@@ -7,6 +7,7 @@ import '../utils/error_handler.dart';
 import '../utils/transaction_decorator.dart';
 import '../utils/transaction_middleware.dart';
 import '../utils/logger.dart';
+import '../utils/json_utils.dart';
 
 part 'firestore_service.g.dart';
 
@@ -41,7 +42,13 @@ class FirestoreService extends BaseService {
       operation: () async {
         final doc = await _firestore.collection('users').doc(userId).get();
         if (!doc.exists) return null;
-        return User.fromJson(doc.data()!..['id'] = doc.id);
+
+        // Get raw data and ensure id is set
+        final data = doc.data()!;
+        data['id'] = doc.id;
+
+        // Convert to User model
+        return User.fromJson(data);
       },
       operationName: 'getUser',
       context: {'userId': userId},
@@ -94,7 +101,13 @@ class FirestoreService extends BaseService {
       operation: () async {
         final doc = await _firestore.collection('videos').doc(videoId).get();
         if (!doc.exists) return null;
-        return Video.fromJson(doc.data()!..['id'] = doc.id);
+
+        // Get raw data and ensure id is set
+        final data = doc.data()!;
+        data['id'] = doc.id;
+
+        // Convert to Video model
+        return Video.fromJson(data);
       },
       operationName: 'getVideo',
       context: {'videoId': videoId},
@@ -113,9 +126,11 @@ class FirestoreService extends BaseService {
         .where('isDeleted', isEqualTo: false)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Video.fromJson(doc.data()..['id'] = doc.id))
-            .toList());
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return Video.fromJson(data);
+            }).toList());
   }
 
   @WithTransaction(
@@ -127,7 +142,7 @@ class FirestoreService extends BaseService {
       'userId': userId,
       'collection': 'videos',
       'conditions': {
-        'uploaderId': userId,
+        'userId': userId,
         'isDeleted': false,
         'orderBy': 'createdAt (descending)',
       },
@@ -135,7 +150,7 @@ class FirestoreService extends BaseService {
 
     return _firestore
         .collection('videos')
-        .where('uploaderId', isEqualTo: userId)
+        .where('userId', isEqualTo: userId)
         .where('isDeleted', isEqualTo: false)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -147,7 +162,7 @@ class FirestoreService extends BaseService {
           final data = doc.data();
           return {
             'id': doc.id,
-            'uploaderId': data['uploaderId'],
+            'userId': data['userId'],
             'isDeleted': data['isDeleted'],
             'createdAt': data['createdAt']?.toDate().toString(),
             'allFields': data.keys.toList(),
@@ -155,9 +170,11 @@ class FirestoreService extends BaseService {
         }).toList(),
       });
 
-      return snapshot.docs
-          .map((doc) => Video.fromJson(doc.data()..['id'] = doc.id))
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Video.fromJson(data);
+      }).toList();
     });
   }
 

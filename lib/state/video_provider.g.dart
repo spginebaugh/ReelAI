@@ -22,7 +22,7 @@ final videoServiceProvider = AutoDisposeProvider<VideoService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef VideoServiceRef = AutoDisposeProviderRef<VideoService>;
-String _$videosHash() => r'056c7d5b6bef353a6a60b77a5033cb17c9610700';
+String _$videosHash() => r'14ddc247d796d8164dcb5caca9a4565a39033ab9';
 
 /// See also [videos].
 @ProviderFor(videos)
@@ -38,7 +38,7 @@ final videosProvider = AutoDisposeStreamProvider<List<Video>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef VideosRef = AutoDisposeStreamProviderRef<List<Video>>;
-String _$userVideosHash() => r'9e3ffdf37174f8650a623f29828dbb3412dcaee6';
+String _$userVideosHash() => r'6d09c393e15f2be8387ea963356fb9ab308d4a14';
 
 /// Copied from Dart SDK
 class _SystemHash {

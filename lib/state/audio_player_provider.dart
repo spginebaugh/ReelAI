@@ -3,49 +3,43 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../utils/storage_paths.dart';
+import '../utils/json_utils.dart';
+import '../utils/logger.dart';
 import 'auth_provider.dart';
 import 'audio_language_provider.dart';
 
 part 'audio_player_provider.g.dart';
+part 'audio_player_provider.freezed.dart';
 
-/// State class for audio player
-class AudioPlayerState {
-  final AudioPlayer? audioPlayer;
-  final bool isInitialized;
-  final bool isPlaying;
-  final Duration position;
-  final String currentLanguage;
-  final bool isSyncing;
-
-  const AudioPlayerState({
-    this.audioPlayer,
-    this.isInitialized = false,
-    this.isPlaying = false,
-    this.position = Duration.zero,
-    this.currentLanguage = 'english',
-    this.isSyncing = false,
-  });
-
-  AudioPlayerState copyWith({
+@freezed
+class AudioPlayerState with _$AudioPlayerState {
+  const factory AudioPlayerState({
+    @JsonKey(toJson: toJsonSafe, fromJson: _audioPlayerFromJson)
     AudioPlayer? audioPlayer,
-    bool? isInitialized,
-    bool? isPlaying,
-    Duration? position,
-    String? currentLanguage,
-    bool? isSyncing,
-  }) {
-    return AudioPlayerState(
-      audioPlayer: audioPlayer ?? this.audioPlayer,
-      isInitialized: isInitialized ?? this.isInitialized,
-      isPlaying: isPlaying ?? this.isPlaying,
-      position: position ?? this.position,
-      currentLanguage: currentLanguage ?? this.currentLanguage,
-      isSyncing: isSyncing ?? this.isSyncing,
-    );
-  }
+    @Default(false) bool isInitialized,
+    @Default(false) bool isPlaying,
+    @JsonKey(toJson: _durationToJson, fromJson: _durationFromJson)
+    @Default(Duration.zero)
+    Duration position,
+    @Default('english') String currentLanguage,
+    @Default(false) bool isSyncing,
+  }) = _AudioPlayerState;
+
+  factory AudioPlayerState.fromJson(Map<String, dynamic> json) =>
+      _$AudioPlayerStateFromJson(json);
 }
+
+// Helper functions for Duration serialization
+int _durationToJson(Duration duration) => duration.inMilliseconds;
+Duration _durationFromJson(int milliseconds) =>
+    Duration(milliseconds: milliseconds);
+
+// Helper function for AudioPlayer deserialization
+AudioPlayer? _audioPlayerFromJson(dynamic _) => null;
 
 /// Provider that manages audio playback and synchronization with video
 @Riverpod(keepAlive: true)
@@ -159,101 +153,115 @@ class AudioPlayerController extends _$AudioPlayerController {
 
   /// Switch to a different audio language
   Future<void> switchLanguage(String videoId, String language) async {
-    debugPrint('🎵 AudioPlayer: Attempting to switch language to: $language');
+    debugPrint('');
+    debugPrint('🚨 [AUDIO_DEBUG] ========================================');
+    debugPrint('🚨 [AUDIO_DEBUG] Starting switchLanguage');
+    debugPrint('🚨 [AUDIO_DEBUG] Params:');
+    debugPrint('🚨 [AUDIO_DEBUG] - videoId: $videoId');
+    debugPrint('🚨 [AUDIO_DEBUG] - language: $language');
+    debugPrint('🚨 [AUDIO_DEBUG] ========================================');
+    debugPrint('');
 
     if (state.isSyncing) {
-      debugPrint('🎵 AudioPlayer: Already syncing, ignoring request');
+      debugPrint('🚨 [AUDIO_DEBUG] Already syncing, ignoring request');
       return;
     }
 
     if (!state.isInitialized || state.audioPlayer == null) {
-      debugPrint('❌ AudioPlayer: Audio player not initialized');
+      debugPrint('🚨 [AUDIO_DEBUG] Audio player not initialized');
       throw Exception(
           'Audio player must be initialized before switching languages');
     }
 
     if (_videoController == null || !_videoController!.value.isInitialized) {
-      debugPrint('❌ AudioPlayer: No valid video controller available');
+      debugPrint('🚨 [AUDIO_DEBUG] No valid video controller');
       throw Exception('Video controller not initialized');
     }
 
     try {
-      debugPrint('🎵 AudioPlayer: Starting language switch process');
+      debugPrint('🚨 [AUDIO_DEBUG] Starting language switch process');
       state = state.copyWith(isSyncing: true);
-
-      // Ensure video is muted before proceeding
-      await _ensureVideoMuted();
 
       // Store current video state
       final wasPlaying = _videoController!.value.isPlaying;
       final currentPosition = _videoController!.value.position;
-      debugPrint('🎵 AudioPlayer: Current video playing state: $wasPlaying');
-      debugPrint(
-          '🎵 AudioPlayer: Current position: ${currentPosition.inMilliseconds}ms');
+      debugPrint('🚨 [AUDIO_DEBUG] Current state:');
+      debugPrint('🚨 [AUDIO_DEBUG] - wasPlaying: $wasPlaying');
+      debugPrint('🚨 [AUDIO_DEBUG] - position: $currentPosition');
 
-      // Pause everything
-      debugPrint('🎵 AudioPlayer: Pausing playback');
-      await _videoController!.pause();
-      await state.audioPlayer!.pause();
+      // Get the current user
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user == null) {
+        debugPrint('🚨 [AUDIO_DEBUG] No authenticated user found');
+        state = state.copyWith(isSyncing: false);
+        throw Exception('User must be authenticated to switch languages');
+      }
+      debugPrint('🚨 [AUDIO_DEBUG] Found user: ${user.uid}');
 
-      debugPrint(
-          '🎵 AudioPlayer: Getting audio file path for language: $language');
+      // Get audio URL using StoragePaths
       final storage = FirebaseStorage.instance;
-      final userId = ref.read(authStateProvider).requireValue!.uid;
       final audioPath = StoragePaths.audioFile(
-        userId,
+        user.uid,
         videoId,
         lang: language,
         ext: 'mp3',
       );
-      debugPrint('🎵 AudioPlayer: Audio path: $audioPath');
 
-      debugPrint('🎵 AudioPlayer: Verifying audio file exists');
-      try {
-        await storage.ref(audioPath).getMetadata();
-      } catch (e) {
-        debugPrint('❌ AudioPlayer: Audio file not found: $e');
-        throw Exception('Audio file not found for language: $language');
-      }
-
-      debugPrint('🎵 AudioPlayer: Getting download URL');
-      final audioUrl = await storage.ref(audioPath).getDownloadURL();
+      debugPrint('');
+      debugPrint('🚨 [AUDIO_DEBUG] ========================================');
+      debugPrint('🚨 [AUDIO_DEBUG] ATTEMPTING TO DOWNLOAD AUDIO');
+      debugPrint('🚨 [AUDIO_DEBUG] Relative path: $audioPath');
       debugPrint(
-          '🎵 AudioPlayer: Got audio URL: ${audioUrl.substring(0, 50)}...');
+          '🚨 [AUDIO_DEBUG] Full storage URL: gs://reel-ai-cd001.appspot.com/$audioPath');
+      debugPrint('🚨 [AUDIO_DEBUG] ========================================');
+      debugPrint('');
 
-      // Reset positions and load new audio
-      debugPrint('🎵 AudioPlayer: Loading new audio');
-      await state.audioPlayer!.stop();
-      debugPrint(
-          '🎵 AudioPlayer: Loading URL: ${audioUrl.substring(0, 50)}...');
+      late final String audioUrl;
       try {
-        await state.audioPlayer!.setUrl(audioUrl);
-        debugPrint('✅ AudioPlayer: Audio URL loaded successfully');
+        audioUrl = await storage.ref(audioPath).getDownloadURL();
+        Logger.audio('Successfully retrieved audio URL', {
+          'audioUrl': audioUrl,
+          'path': audioPath,
+        });
+        debugPrint('🎵 AudioPlayer: Loading audio from URL: $audioUrl');
       } catch (e) {
-        debugPrint('❌ AudioPlayer: Failed to load audio URL: $e');
+        Logger.error('Failed to get audio download URL', {
+          'error': e.toString(),
+          'path': audioPath,
+          'userId': user.uid,
+          'videoId': videoId,
+          'language': language,
+        });
+        state = state.copyWith(isSyncing: false);
         rethrow;
       }
 
-      // Ensure audio player is ready with high volume
-      debugPrint('🎵 AudioPlayer: Setting up audio player with high volume');
-      await state.audioPlayer!.setVolume(1.0); // Maximum volume
+      // Reset positions and load new audio
+      await state.audioPlayer!.stop();
+
+      try {
+        await state.audioPlayer!.setUrl(audioUrl);
+      } catch (e) {
+        debugPrint('❌ AudioPlayer: Failed to load audio URL: $e');
+        state = state.copyWith(isSyncing: false);
+        rethrow;
+      }
+
+      // Set up audio player
+      await state.audioPlayer!.setVolume(1.0);
       final duration = await state.audioPlayer!.duration;
-      debugPrint(
-          '🎵 AudioPlayer: Audio duration: ${duration?.inMilliseconds}ms');
       if (duration == null) {
-        debugPrint('❌ AudioPlayer: Audio duration is null after loading');
+        state = state.copyWith(isSyncing: false);
         throw Exception('Failed to load audio file');
       }
 
       // Seek both to the current position
-      debugPrint('🎵 AudioPlayer: Seeking to current position');
       await Future.wait([
         _videoController!.seekTo(currentPosition),
         state.audioPlayer!.seek(currentPosition),
       ]);
 
       // Update state
-      debugPrint('🎵 AudioPlayer: Updating state');
       state = state.copyWith(
         currentLanguage: language,
         isInitialized: true,
@@ -264,8 +272,6 @@ class AudioPlayerController extends _$AudioPlayerController {
 
       // Resume playback if it was playing before
       if (wasPlaying) {
-        debugPrint('🎵 AudioPlayer: Resuming playback');
-        // Start audio slightly before video to ensure sync
         await state.audioPlayer!.play();
         await Future.delayed(const Duration(milliseconds: 50));
         await _videoController!.play();
@@ -275,10 +281,8 @@ class AudioPlayerController extends _$AudioPlayerController {
       // Double check video is still muted
       await _ensureVideoMuted();
 
-      debugPrint('🎵 AudioPlayer: Notifying language provider');
+      // Update language provider
       ref.read(currentLanguageProvider(videoId).notifier).setLanguage(language);
-
-      debugPrint('✅ AudioPlayer: Language switch completed successfully');
     } catch (e) {
       debugPrint('❌ AudioPlayer: Language switch failed: $e');
       state = state.copyWith(isSyncing: false);

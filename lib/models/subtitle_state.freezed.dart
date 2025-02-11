@@ -231,6 +231,7 @@ mixin _$SubtitleState {
   SubtitleCue? get currentCue => throw _privateConstructorUsedError;
   String get language => throw _privateConstructorUsedError;
   bool get isVisible => throw _privateConstructorUsedError;
+  List<String> get availableLanguages => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   TextStyle? get style => throw _privateConstructorUsedError;
 
@@ -255,6 +256,7 @@ abstract class $SubtitleStateCopyWith<$Res> {
       SubtitleCue? currentCue,
       String language,
       bool isVisible,
+      List<String> availableLanguages,
       @JsonKey(ignore: true) TextStyle? style});
 
   $SubtitleCueCopyWith<$Res>? get currentCue;
@@ -279,6 +281,7 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
     Object? currentCue = freezed,
     Object? language = null,
     Object? isVisible = null,
+    Object? availableLanguages = null,
     Object? style = freezed,
   }) {
     return _then(_value.copyWith(
@@ -298,6 +301,10 @@ class _$SubtitleStateCopyWithImpl<$Res, $Val extends SubtitleState>
           ? _value.isVisible
           : isVisible // ignore: cast_nullable_to_non_nullable
               as bool,
+      availableLanguages: null == availableLanguages
+          ? _value.availableLanguages
+          : availableLanguages // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       style: freezed == style
           ? _value.style
           : style // ignore: cast_nullable_to_non_nullable
@@ -333,6 +340,7 @@ abstract class _$$SubtitleStateImplCopyWith<$Res>
       SubtitleCue? currentCue,
       String language,
       bool isVisible,
+      List<String> availableLanguages,
       @JsonKey(ignore: true) TextStyle? style});
 
   @override
@@ -356,6 +364,7 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
     Object? currentCue = freezed,
     Object? language = null,
     Object? isVisible = null,
+    Object? availableLanguages = null,
     Object? style = freezed,
   }) {
     return _then(_$SubtitleStateImpl(
@@ -375,6 +384,10 @@ class __$$SubtitleStateImplCopyWithImpl<$Res>
           ? _value.isVisible
           : isVisible // ignore: cast_nullable_to_non_nullable
               as bool,
+      availableLanguages: null == availableLanguages
+          ? _value._availableLanguages
+          : availableLanguages // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       style: freezed == style
           ? _value.style
           : style // ignore: cast_nullable_to_non_nullable
@@ -391,8 +404,10 @@ class _$SubtitleStateImpl implements _SubtitleState {
       this.currentCue,
       this.language = 'english',
       this.isVisible = true,
+      final List<String> availableLanguages = const [],
       @JsonKey(ignore: true) this.style})
-      : _subtitles = subtitles;
+      : _subtitles = subtitles,
+        _availableLanguages = availableLanguages;
 
   factory _$SubtitleStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubtitleStateImplFromJson(json);
@@ -414,13 +429,23 @@ class _$SubtitleStateImpl implements _SubtitleState {
   @override
   @JsonKey()
   final bool isVisible;
+  final List<String> _availableLanguages;
+  @override
+  @JsonKey()
+  List<String> get availableLanguages {
+    if (_availableLanguages is EqualUnmodifiableListView)
+      return _availableLanguages;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_availableLanguages);
+  }
+
   @override
   @JsonKey(ignore: true)
   final TextStyle? style;
 
   @override
   String toString() {
-    return 'SubtitleState(subtitles: $subtitles, currentCue: $currentCue, language: $language, isVisible: $isVisible, style: $style)';
+    return 'SubtitleState(subtitles: $subtitles, currentCue: $currentCue, language: $language, isVisible: $isVisible, availableLanguages: $availableLanguages, style: $style)';
   }
 
   @override
@@ -436,6 +461,8 @@ class _$SubtitleStateImpl implements _SubtitleState {
                 other.language == language) &&
             (identical(other.isVisible, isVisible) ||
                 other.isVisible == isVisible) &&
+            const DeepCollectionEquality()
+                .equals(other._availableLanguages, _availableLanguages) &&
             (identical(other.style, style) || other.style == style));
   }
 
@@ -447,6 +474,7 @@ class _$SubtitleStateImpl implements _SubtitleState {
       currentCue,
       language,
       isVisible,
+      const DeepCollectionEquality().hash(_availableLanguages),
       style);
 
   /// Create a copy of SubtitleState
@@ -471,6 +499,7 @@ abstract class _SubtitleState implements SubtitleState {
       final SubtitleCue? currentCue,
       final String language,
       final bool isVisible,
+      final List<String> availableLanguages,
       @JsonKey(ignore: true) final TextStyle? style}) = _$SubtitleStateImpl;
 
   factory _SubtitleState.fromJson(Map<String, dynamic> json) =
@@ -484,6 +513,8 @@ abstract class _SubtitleState implements SubtitleState {
   String get language;
   @override
   bool get isVisible;
+  @override
+  List<String> get availableLanguages;
   @override
   @JsonKey(ignore: true)
   TextStyle? get style;

@@ -52,7 +52,7 @@ class AuthService extends BaseService {
         // Create user in Firestore
         if (credential.user != null) {
           final username = email.split('@')[0]; // Default username from email
-          await _ref.read(currentUserProvider.notifier).createOrUpdateUser(
+          await _ref.read(userNotifierProvider.notifier).createOrUpdateUser(
                 username: username,
                 email: email,
               );
