@@ -19,10 +19,10 @@ class TrimController extends _$TrimController {
     ref.read(videoEditControllerProvider.notifier).updateEndValue(value);
   }
 
-  void updatePlaybackState(bool isPlaying) {
+  void updatePlayingState(bool isPlaying) {
     ref
         .read(videoEditControllerProvider.notifier)
-        .updatePlaybackState(isPlaying);
+        .updatePlayingState(isPlaying);
   }
 
   void processVideo() {

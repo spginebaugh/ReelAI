@@ -385,7 +385,7 @@ class VideoEditController extends _$VideoEditController {
     _updateState((state) => state.copyWith(endValue: value));
   }
 
-  void updatePlaybackState(bool isPlaying) {
+  void updatePlayingState(bool isPlaying) {
     _updateState((state) => state.copyWith(isPlaying: isPlaying));
   }
 

@@ -114,20 +114,14 @@ class AudioPlayerController extends _$AudioPlayerController {
 
     debugPrint('🎵 AudioPlayer: Ensuring video is completely muted');
 
-    // Force mute the video player multiple ways
+    // Force mute the video player
     await _videoController!.setVolume(0);
-    await _videoController!.setPlaybackSpeed(_videoController!
-        .value.playbackSpeed); // Reset speed to ensure audio state
 
     // Verify mute took effect
     if (_videoController!.value.volume > 0) {
-      debugPrint('⚠️ AudioPlayer: Video not muted, retrying aggressively...');
-      // Try multiple times with different approaches
-      await Future.wait([
-        _videoController!.setVolume(0),
-        _videoController!
-            .setPlaybackSpeed(_videoController!.value.playbackSpeed),
-      ]);
+      debugPrint('⚠️ AudioPlayer: Video not muted, retrying...');
+      // Try one more time
+      await _videoController!.setVolume(0);
 
       // Final verification
       if (_videoController!.value.volume > 0) {
@@ -143,11 +137,10 @@ class AudioPlayerController extends _$AudioPlayerController {
   void _onVideoVolumeChanged() {
     if (_videoController == null) return;
 
-    // If volume somehow got changed, mute it aggressively
+    // If volume somehow got changed, mute it
     if (_videoController!.value.volume > 0) {
       debugPrint('⚠️ AudioPlayer: Video volume changed, re-muting...');
       _videoController!.setVolume(0);
-      _videoController!.setPlaybackSpeed(_videoController!.value.playbackSpeed);
     }
   }
 

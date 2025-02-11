@@ -24,7 +24,7 @@ class ChewieControllerFactory {
     VideoPlayerController videoPlayerController, {
     bool autoPlay = false,
     bool showControls = true,
-    bool allowFullScreen = true,
+    bool allowFullScreen = false,
   }) {
     return ChewieController(
       videoPlayerController: videoPlayerController,

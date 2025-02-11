@@ -7,7 +7,7 @@ part of 'video_edit_provider.dart';
 // **************************************************************************
 
 String _$videoEditControllerHash() =>
-    r'4507d91830aaef361c63776155bc5395a77b50dd';
+    r'10ef8125315eaf4bab73d9e3c3a714ea9f96559a';
 
 /// See also [VideoEditController].
 @ProviderFor(VideoEditController)

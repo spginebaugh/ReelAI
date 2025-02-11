@@ -6,7 +6,6 @@ import '../../../state/video_edit_provider.dart';
 import '../features/brightness/brightness_button.dart';
 import '../features/filter/filter_button.dart';
 import '../features/trim/trim_button.dart';
-import '../features/playback_speed/playback_speed_button.dart';
 import '../features/metadata/metadata_button.dart';
 import '../features/audio/audio_button.dart';
 import '../features/subtitles/subtitle_button.dart';
@@ -47,19 +46,15 @@ class EditToolbar extends ConsumerWidget {
               const SizedBox(height: 16),
               MetadataButton(video: video),
               const SizedBox(height: 100),
-              // Edit mode buttons
               const TrimButton(),
               const SizedBox(height: 16),
               const FilterButton(),
               const SizedBox(height: 16),
               const BrightnessButton(),
-              const SizedBox(height: 16),
-              const PlaybackSpeedButton(),
               const SizedBox(height: 100),
-              // Language controls moved up
-              SubtitleButton(video: video),
-              const SizedBox(height: 16),
               AudioButton(video: video),
+              const SizedBox(height: 16),
+              SubtitleButton(video: video),
               const Spacer(flex: 1),
             ],
           ),

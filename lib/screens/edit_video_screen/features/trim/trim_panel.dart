@@ -57,7 +57,7 @@ class TrimPanel extends ConsumerWidget {
                         },
                         onChangeEnd: (_) => ref
                             .read(videoEditControllerProvider.notifier)
-                            .updatePlaybackState(false),
+                            .updatePlayingState(false),
                       ),
                     ),
                     Text(

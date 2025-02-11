@@ -6,7 +6,7 @@ part of 'trim_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$trimControllerHash() => r'c28d1ead456616e4d8d37be7d7fb67d5a0decf86';
+String _$trimControllerHash() => r'81f62a4d1dc865da4477caf7f84b0686b11ad083';
 
 /// See also [TrimController].
 @ProviderFor(TrimController)

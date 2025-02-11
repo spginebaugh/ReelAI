@@ -23,7 +23,7 @@ class VideoControllerManager {
   Future<(VideoPlayerController, ChewieController)> createAndVerifyControllers(
     File videoFile, {
     bool showControls = true,
-    bool allowFullScreen = true,
+    bool allowFullScreen = false,
   }) async {
     debugPrint('🎥 Creating new video controllers');
     final videoPlayerController = await VideoPlayerFactory.create(videoFile);
