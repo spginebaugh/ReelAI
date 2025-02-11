@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:chewie/chewie.dart';
 import '../../models/video.dart';
 import '../../models/video_edit_state.dart';
 import '../../router/route_names.dart';
 import '../../state/video_edit_provider.dart';
 import '../../state/audio_player_provider.dart';
-import 'widgets/video_player_section.dart';
-import 'widgets/right_toolbar/right_toolbar.dart';
-import 'widgets/editing_controls/editing_controls.dart';
+import '../../widgets/subtitle_display.dart';
+import 'toolbar/edit_toolbar.dart';
+import 'toolbar/panel_container.dart';
+import 'features/video_player_section/video_player_section.dart';
 
 class EditVideoScreen extends ConsumerStatefulWidget {
   final Video video;
@@ -75,64 +77,58 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
     return editStateAsync.when(
       data: (editState) => Scaffold(
         body: Stack(
+          fit: StackFit.expand,
           children: [
-            Column(
-              children: [
-                if (editState.isLoading)
-                  const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (editState.chewieController != null) ...[
-                  Expanded(
+            // Video player in background
+            VideoPlayerSection(editState: editState),
+
+            // Overlay content
+            SafeArea(
+              child: Stack(
+                children: [
+                  // Top buttons
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 8.0,
+                    ),
                     child: Row(
                       children: [
-                        // Video player section
-                        Expanded(
-                          child: VideoPlayerSection(
-                            chewieController: editState.chewieController!,
-                            videoId: widget.video.id,
-                          ),
-                        ),
-                        // Right toolbar
-                        RightToolbar(
-                          video: widget.video,
-                          editState: editState,
+                        _buildFloatingButton(
+                          icon: Icons.arrow_back,
+                          onPressed: () =>
+                              context.pushReplacementNamed(RouteNames.myVideos),
                         ),
                       ],
                     ),
                   ),
-                ] else
-                  const Expanded(
-                    child: Center(child: CircularProgressIndicator()),
+
+                  // Right side toolbar
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: EditToolbar(video: widget.video),
                   ),
-                // Editing controls at bottom
-                if (!editState.isLoading &&
-                    editState.currentMode != EditingMode.none)
-                  EditingControls(editState: editState),
-              ],
-            ),
-            // Back button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 8,
-              child: _buildFloatingButton(
-                icon: Icons.arrow_back,
-                onPressed: () =>
-                    context.pushReplacementNamed(RouteNames.myVideos),
+
+                  // Subtitles
+                  const Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 80, // Position above the panel container
+                    child: SubtitleDisplay(),
+                  ),
+
+                  // Bottom panel
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: const PanelContainer(),
+                  ),
+                ],
               ),
             ),
-            // Save button
-            if (!editState.isProcessing && !editState.isLoading)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 8,
-                right: 64,
-                child: _buildFloatingButton(
-                  icon: Icons.save,
-                  onPressed: () => ref
-                      .read(videoEditControllerProvider.notifier)
-                      .processVideo(),
-                ),
-              ),
           ],
         ),
       ),

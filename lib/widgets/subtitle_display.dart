@@ -20,9 +20,14 @@ class SubtitleDisplay extends HookConsumerWidget {
       color: Colors.white,
       shadows: [
         Shadow(
-          color: Colors.black.withOpacity(0.8),
+          color: Colors.black.withOpacity(0.9),
           offset: const Offset(1, 1),
-          blurRadius: 2,
+          blurRadius: 3,
+        ),
+        Shadow(
+          color: Colors.black.withOpacity(0.9),
+          offset: const Offset(-1, -1),
+          blurRadius: 3,
         ),
       ],
     );
@@ -30,19 +35,12 @@ class SubtitleDisplay extends HookConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       alignment: Alignment.center,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          subtitleState.currentCue!.text,
-          style: subtitleState.style ?? defaultStyle,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
+      child: Text(
+        subtitleState.currentCue!.text,
+        style: subtitleState.style ?? defaultStyle,
+        textAlign: TextAlign.center,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
