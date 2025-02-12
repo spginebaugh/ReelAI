@@ -4,6 +4,8 @@ import 'package:video_player/video_player.dart';
 import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/common/services/base_service.dart';
 import 'package:reel_ai/features/videos/services/utils/video_error_handler.dart';
+import 'package:reel_ai/features/videos/services/factories/video_player_factory.dart';
+import 'package:reel_ai/features/videos/services/factories/chewie_controller_factory.dart';
 
 /// Service for managing video playback
 class PlayerService extends BaseService {
@@ -25,11 +27,9 @@ class PlayerService extends BaseService {
         await _disposeControllers();
 
         try {
-          _controller = VideoPlayerController.file(video);
-          await _controller!.initialize();
-
-          _chewieController = ChewieController(
-            videoPlayerController: _controller!,
+          _controller = await VideoPlayerFactory.create(video);
+          _chewieController = ChewieControllerFactory.create(
+            _controller!,
             autoPlay: autoPlay,
             showControls: showControls,
             allowFullScreen: allowFullScreen,
@@ -59,8 +59,7 @@ class PlayerService extends BaseService {
 
         VideoPlayerController? tempController;
         try {
-          tempController = VideoPlayerController.file(video);
-          await tempController.initialize();
+          tempController = await VideoPlayerFactory.create(video);
           return tempController.value.duration.inMilliseconds.toDouble();
         } finally {
           if (tempController != null) {

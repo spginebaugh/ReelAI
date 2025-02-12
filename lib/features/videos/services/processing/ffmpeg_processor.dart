@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:reel_ai/common/utils/logger.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/services/base_service.dart';
 import 'package:reel_ai/features/videos/services/utils/video_error_handler.dart';
 import 'package:reel_ai/features/videos/services/utils/video_file_utils.dart';
 import 'package:reel_ai/features/videos/services/utils/ffmpeg_executor.dart';
 
-/// Handles low-level FFmpeg operations for video processing
-class FFmpegProcessor {
+/// Processor for FFmpeg operations
+class FFmpegProcessor extends BaseService {
   /// Executes an FFmpeg command with error handling and logging
   Future<String> executeFFmpegCommand({
     required String command,
@@ -43,6 +45,49 @@ class FFmpegProcessor {
       );
       rethrow;
     }
+  }
+
+  /// Creates a muxed stream combining video (without audio) and a separate audio file
+  Future<String> createMuxedStream({
+    required String videoPath,
+    required String audioPath,
+    required String outputPath,
+  }) async {
+    return executeOperation<String>(
+      operation: () async {
+        // Command to mux video and audio while ensuring video audio is removed
+        // -c:v copy -> Copy video stream without re-encoding
+        // -map 0:v -> Take video from first input
+        // -map 1:a -> Take audio from second input
+        // -shortest -> End when shortest input ends
+        // -avoid_negative_ts make_zero -> Ensure proper timestamp handling
+        // -max_interleave_delta 0 -> Minimize audio/video sync issues
+        // -af aresample=async=1 -> Handle audio sync issues
+        // -movflags +faststart -> Enable streaming optimization
+        final command = '-i "$videoPath" -i "$audioPath" '
+            '-c:v copy -c:a aac -b:a 192k ' // Convert MP3 to AAC with good quality
+            '-af aresample=async=1 ' // Handle potential audio sync issues
+            '-map 0:v -map 1:a '
+            '-shortest -avoid_negative_ts make_zero '
+            '-max_interleave_delta 0 '
+            '-movflags +faststart ' // Optimize for streaming
+            '"$outputPath"';
+
+        await executeFFmpegCommand(
+          command: command,
+          operationName: 'createMuxedStream',
+          outputPath: outputPath,
+        );
+
+        // Verify the output file was created successfully
+        final outputFile = File(outputPath);
+        await VideoFileUtils.verifyOutputFile(outputFile);
+
+        return outputPath;
+      },
+      operationName: 'createMuxedStream',
+      errorCategory: ErrorCategory.processing,
+    );
   }
 
   /// Extracts audio from a video file

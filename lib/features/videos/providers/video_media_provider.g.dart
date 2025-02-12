@@ -6,13 +6,13 @@ part of 'video_media_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$videoMediaHash() => r'90a9a3e1ca99b191e4587c8746fd694bfcac9cd6';
+String _$videoMediaHash() => r'483eca74f747db3da6630206fa20f9fbc1506396';
 
 /// Provider for the VideoMediaService
 ///
 /// Copied from [videoMedia].
 @ProviderFor(videoMedia)
-final videoMediaProvider = Provider<VideoMediaService>.internal(
+final videoMediaProvider = AutoDisposeProvider<VideoMediaService>.internal(
   videoMedia,
   name: r'videoMediaProvider',
   debugGetCreateSourceHash:
@@ -23,6 +23,6 @@ final videoMediaProvider = Provider<VideoMediaService>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef VideoMediaRef = ProviderRef<VideoMediaService>;
+typedef VideoMediaRef = AutoDisposeProviderRef<VideoMediaService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

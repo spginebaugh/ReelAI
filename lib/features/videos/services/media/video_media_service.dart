@@ -1,16 +1,29 @@
+import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/common/utils/logger.dart';
+import 'package:reel_ai/features/videos/services/processing/ffmpeg_processor.dart';
+import 'package:reel_ai/features/videos/services/utils/video_file_utils.dart';
 
-/// Service for managing video media operations including Firebase Storage access,
-/// volume control, and synchronized playback
+/// Service responsible for managing video media operations including:
+/// - Firebase Storage access for media files
+/// - Language availability management
+/// - Audio/Video synchronization
+/// - Playback state management
+///
+/// Note: For video controller lifecycle management (creation, disposal, muting),
+/// use [VideoControllerManager] instead.
 class VideoMediaService {
   final FirebaseStorage _storage;
+  final FFmpegProcessor _ffmpeg;
 
-  VideoMediaService({FirebaseStorage? storage})
-      : _storage = storage ?? FirebaseStorage.instance;
+  VideoMediaService({
+    FirebaseStorage? storage,
+    FFmpegProcessor? ffmpeg,
+  })  : _storage = storage ?? FirebaseStorage.instance,
+        _ffmpeg = ffmpeg ?? FFmpegProcessor();
 
   /// Fetches a media file from Firebase Storage
   Future<String?> fetchMediaUrl({
@@ -83,18 +96,27 @@ class VideoMediaService {
 
       final result = await _storage.ref(dirPath).listAll();
 
+      // Extract languages from file names
       final languages = result.items
           .where((ref) => ref.name.endsWith(fileExtension))
           .map((ref) {
-            final parts = ref.name.split('_');
-            if (parts.length != 2) return null;
-            return parts[1].split('.')[0];
+            final filename = ref.name;
+            // Handle both formats: audio_english.mp3 and audio.english.mp3
+            final nameWithoutExt = filename.substring(
+              0,
+              filename.length - (fileExtension.length + 1),
+            );
+            final parts = nameWithoutExt.split(RegExp(r'[_.]'));
+            if (parts.length < 2) return null;
+            return parts.last.toLowerCase();
           })
-          .where((lang) => lang != null)
+          .where((lang) => lang != null && lang.isNotEmpty)
           .map((lang) => lang!)
+          .toSet() // Remove duplicates
           .toList();
 
-      // Ensure English is first if available
+      // Sort languages alphabetically after ensuring English is first
+      languages.sort();
       if (languages.contains('english')) {
         languages.remove('english');
         languages.insert(0, 'english');
@@ -104,31 +126,17 @@ class VideoMediaService {
         'languages': languages,
       });
 
-      return languages;
+      // Return all found languages, or just English if none found
+      return languages.isEmpty ? ['english'] : languages;
     } catch (e) {
       Logger.error('Failed to list $type languages', {
         'error': e.toString(),
         'userId': userId,
         'videoId': videoId,
       });
-      return ['english']; // Fallback to English
+      // Only return English as fallback if we couldn't access the storage
+      return ['english'];
     }
-  }
-
-  /// Ensures video player is muted
-  Future<void> ensureVideoMuted(VideoPlayerController controller) async {
-    Logger.debug('Ensuring video player is muted');
-
-    await controller.setVolume(0);
-    if (controller.value.volume > 0) {
-      Logger.warning('First mute attempt failed, retrying...');
-      await controller.setVolume(0);
-
-      if (controller.value.volume > 0) {
-        throw Exception('Failed to mute video player after multiple attempts');
-      }
-    }
-    Logger.debug('Successfully muted video player');
   }
 
   /// Synchronizes audio and video positions
@@ -174,5 +182,93 @@ class VideoMediaService {
     }
 
     Logger.debug('Successfully updated playback state');
+  }
+
+  /// Creates a muxed stream with the specified audio language
+  Future<File> createMuxedStreamWithAudio({
+    required File videoFile,
+    required String userId,
+    required String videoId,
+    required String language,
+  }) async {
+    File? audioFile;
+    File? outputFile;
+
+    try {
+      Logger.debug('Creating muxed stream', {
+        'videoId': videoId,
+        'language': language,
+      });
+
+      // Get audio file URL
+      final audioUrl = await fetchMediaUrl(
+        userId: userId,
+        videoId: videoId,
+        type: 'audio',
+        format: 'mp3',
+        language: language,
+      );
+
+      if (audioUrl == null) {
+        throw Exception('Audio file not found for language: $language');
+      }
+
+      // Download audio file
+      audioFile = await VideoFileUtils.downloadFile(
+        url: audioUrl,
+        prefix: 'audio',
+        extension: 'mp3',
+      );
+
+      // Create output path for muxed file
+      outputFile = await VideoFileUtils.createTempVideoFile(
+        prefix: 'muxed',
+        extension: 'mp4',
+      );
+
+      // Create muxed stream
+      await _ffmpeg.createMuxedStream(
+        videoPath: videoFile.path,
+        audioPath: audioFile.path,
+        outputPath: outputFile.path,
+      );
+
+      Logger.success('Successfully created muxed stream', {
+        'videoId': videoId,
+        'language': language,
+      });
+
+      return outputFile;
+    } catch (e) {
+      Logger.error('Failed to create muxed stream', {
+        'error': e.toString(),
+        'videoId': videoId,
+        'language': language,
+      });
+
+      // Clean up output file if it exists and there was an error
+      if (outputFile != null) {
+        try {
+          await outputFile.delete();
+        } catch (e) {
+          Logger.warning('Failed to delete output file after error', {
+            'error': e.toString(),
+          });
+        }
+      }
+
+      rethrow;
+    } finally {
+      // Clean up temporary audio file
+      if (audioFile != null) {
+        try {
+          await audioFile.delete();
+        } catch (e) {
+          Logger.warning('Failed to delete temporary audio file', {
+            'error': e.toString(),
+          });
+        }
+      }
+    }
   }
 }

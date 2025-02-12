@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/utils/logger.dart';
 
 /// Utility class for common video file operations
 class VideoFileUtils {
@@ -31,12 +34,17 @@ class VideoFileUtils {
   }
 
   /// Creates a temporary video file with a unique name
-  static Future<File> createTempVideoFile(
-      {String prefix = 'temp', String extension = 'mp4'}) async {
+  static Future<File> createTempVideoFile({
+    required String prefix,
+    required String extension,
+  }) async {
     final tempDir = await getTemporaryDirectory();
-    return File(
-      '${tempDir.path}/${prefix}_${DateTime.now().millisecondsSinceEpoch}.$extension',
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filePath = path.join(
+      tempDir.path,
+      '${prefix}_$timestamp.$extension',
     );
+    return File(filePath);
   }
 
   /// Verifies that an output file exists and has content
@@ -86,6 +94,43 @@ class VideoFileUtils {
       } catch (e) {
         // Ignore deletion errors
       }
+    }
+  }
+
+  /// Downloads a file from a URL and saves it to a temporary file
+  static Future<File> downloadFile({
+    required String url,
+    required String prefix,
+    required String extension,
+  }) async {
+    try {
+      Logger.debug('Downloading file', {
+        'url': url,
+        'prefix': prefix,
+      });
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download file: ${response.statusCode}');
+      }
+
+      final file = await createTempVideoFile(
+        prefix: prefix,
+        extension: extension,
+      );
+      await file.writeAsBytes(response.bodyBytes);
+
+      Logger.success('Successfully downloaded file', {
+        'path': file.path,
+      });
+
+      return file;
+    } catch (e) {
+      Logger.error('Failed to download file', {
+        'error': e.toString(),
+        'url': url,
+      });
+      rethrow;
     }
   }
 }

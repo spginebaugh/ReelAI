@@ -11,8 +11,7 @@ import 'package:reel_ai/features/videos/models/language.dart';
 import 'package:reel_ai/common/services/video_service.dart';
 import 'package:reel_ai/common/widgets/error_text.dart';
 import 'package:reel_ai/common/router/route_names.dart';
-import 'package:reel_ai/features/videos/providers/audio_language_provider.dart';
-import 'package:reel_ai/features/videos/providers/subtitle_controller.dart';
+import 'package:reel_ai/features/videos/providers/video_player_facade.dart';
 
 class EditVideoMetadataScreen extends HookConsumerWidget {
   final Video video;
@@ -137,18 +136,9 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
               ),
             );
 
-            // Optimistically update available languages
-            debugPrint('🔄 Updating available languages...');
-
-            // Refresh audio languages
-            await ref
-                .read(audioLanguageControllerProvider(video.id).notifier)
-                .refresh();
-
-            // Refresh subtitle languages
-            await ref
-                .read(subtitleControllerProvider.notifier)
-                .loadAvailableLanguages(video.id, video.userId);
+            // Refresh video state to get new languages
+            debugPrint('🔄 Refreshing video state...');
+            ref.invalidate(videoPlayerFacadeProvider);
 
             // Navigate back to edit screen
             debugPrint('🔄 Navigating back to refresh video state...');

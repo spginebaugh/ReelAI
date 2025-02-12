@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reel_ai/features/videos/models/video.dart';
-import 'package:reel_ai/features/videos/models/video_edit_state.dart';
-import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
+import 'package:reel_ai/features/videos/models/video_player_state.dart';
+import 'package:reel_ai/features/videos/providers/video_player_facade.dart';
 import 'package:reel_ai/common/router/route_names.dart';
 
 class MetadataButton extends ConsumerWidget {
@@ -16,23 +16,21 @@ class MetadataButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final editState = ref.watch(videoEditControllerProvider);
+    final videoState = ref.watch(videoPlayerFacadeProvider);
 
-    return editState.when(
+    return videoState.when(
       data: (state) => IconButton(
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
         icon: Icon(
           Icons.edit_note,
-          color: state.currentMode == EditingMode.metadata
+          color: state.mode == VideoMode.edit
               ? Theme.of(context).colorScheme.primary
               : null,
         ),
         onPressed: () {
-          // Set mode to metadata before navigating
-          ref
-              .read(videoEditControllerProvider.notifier)
-              .setMode(EditingMode.metadata);
+          // Set mode to edit before navigating
+          ref.read(videoPlayerFacadeProvider.notifier).setMode(VideoMode.edit);
           // Navigate to metadata screen with video object and id parameter
           context.pushNamed(
             RouteNames.editVideoMetadata,

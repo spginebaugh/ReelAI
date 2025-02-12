@@ -55,6 +55,9 @@ dependencies:
   ffmpeg_kit_flutter: 6.0.3
   path_provider: ^2.1.5
 
+  # networking
+  http: ^1.2.1
+
   # other
   file_picker: ^8.1.1
   uuid: ^4.5.1

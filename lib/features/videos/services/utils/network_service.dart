@@ -17,7 +17,10 @@ class NetworkService extends BaseService {
           );
         }
 
-        final tempFile = await VideoFileUtils.createTempVideoFile();
+        final tempFile = await VideoFileUtils.createTempVideoFile(
+          prefix: 'video',
+          extension: 'mp4',
+        );
 
         try {
           final videoBytes =

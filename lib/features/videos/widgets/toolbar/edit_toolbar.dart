@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:reel_ai/features/videos/models/video.dart';
-import 'package:reel_ai/features/videos/models/video_edit_state.dart';
-import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
+import 'package:reel_ai/features/videos/models/video_player_state.dart';
+import 'package:reel_ai/features/videos/providers/video_player_facade.dart';
 import 'features/metadata/metadata_button.dart';
-import 'features/audio/audio_button.dart';
 import 'features/subtitles/subtitle_button.dart';
+import 'features/language/language_button.dart';
 
 class EditToolbar extends ConsumerWidget {
   final Video video;
@@ -17,9 +17,9 @@ class EditToolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final editState = ref.watch(videoEditControllerProvider);
+    final videoState = ref.watch(videoPlayerFacadeProvider);
 
-    return editState.when(
+    return videoState.when(
       data: (state) => SizedBox(
         width: 56,
         child: Padding(
@@ -32,27 +32,39 @@ class EditToolbar extends ConsumerWidget {
                 constraints: const BoxConstraints(),
                 icon: Icon(
                   Icons.close,
-                  color: state.currentMode == EditingMode.none
+                  color: state.mode == VideoMode.view
                       ? Theme.of(context).colorScheme.primary
                       : Colors.white,
                 ),
                 onPressed: () => ref
-                    .read(videoEditControllerProvider.notifier)
-                    .setMode(EditingMode.none),
+                    .read(videoPlayerFacadeProvider.notifier)
+                    .setMode(VideoMode.view),
               ),
               const SizedBox(height: 16),
+              // Metadata button
               MetadataButton(video: video),
               const Spacer(),
-              AudioButton(video: video),
-              const SizedBox(height: 16),
+              // Language and subtitle controls
               SubtitleButton(video: video),
+              const SizedBox(height: 16),
+              LanguageButton(videoId: video.id),
               const Spacer(flex: 1),
             ],
           ),
         ),
       ),
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => const SizedBox(
+        width: 56,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (_, __) => const SizedBox(
+        width: 56,
+        child: Center(
+          child: Icon(Icons.error_outline, color: Colors.red),
+        ),
+      ),
     );
   }
 }
