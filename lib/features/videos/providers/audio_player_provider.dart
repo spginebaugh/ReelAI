@@ -9,7 +9,9 @@ import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/common/utils/json_utils.dart';
 import 'package:reel_ai/common/utils/logger.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
+import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
 import 'audio_language_provider.dart';
+import 'video_media_provider.dart';
 
 part 'audio_player_provider.g.dart';
 part 'audio_player_provider.freezed.dart';
@@ -45,214 +47,124 @@ dynamic _audioPlayerToJson(AudioPlayer? _) => null;
 @Riverpod(keepAlive: true)
 class AudioPlayerController extends _$AudioPlayerController {
   VideoPlayerController? _videoController;
+  VideoMediaService get _mediaService => ref.read(videoMediaProvider);
 
   @override
   AudioPlayerState build() {
     ref.onDispose(() {
-      debugPrint('🎵 AudioPlayer: Provider disposing');
+      Logger.debug('AudioPlayer: Provider disposing');
       dispose();
     });
-
     return const AudioPlayerState();
   }
 
-  /// Initialize the audio player with a video controller for sync
   Future<void> initialize(VideoPlayerController videoController) async {
-    debugPrint('🎵 AudioPlayer: Initializing with video controller');
+    Logger.debug('AudioPlayer: Initializing with video controller');
 
-    if (videoController.value.isInitialized == false) {
-      debugPrint('❌ AudioPlayer: Video controller must be initialized first');
+    if (!videoController.value.isInitialized) {
+      Logger.error('Video controller must be initialized first');
       throw Exception('Video controller must be initialized first');
     }
 
     try {
-      // Clean up any existing resources
-      debugPrint('🎵 AudioPlayer: Cleaning up existing resources');
-      await dispose(); // This will handle all cleanup
+      // Clean up existing resources
+      Logger.debug('AudioPlayer: Cleaning up existing resources');
+      await dispose();
 
       // Create new audio player
-      debugPrint('🎵 AudioPlayer: Creating new audio player');
+      Logger.debug('AudioPlayer: Creating new audio player');
       final audioPlayer = AudioPlayer();
 
       // Set up video controller
-      debugPrint('🎵 AudioPlayer: Setting up video controller');
+      Logger.debug('AudioPlayer: Setting up video controller');
       _videoController = videoController;
-      await _ensureVideoMuted();
+      await _mediaService.ensureVideoMuted(videoController);
 
-      debugPrint('🎵 AudioPlayer: Configuring audio player settings');
-      await audioPlayer.setVolume(1.0); // Maximum volume for audio player
+      Logger.debug('AudioPlayer: Configuring audio player settings');
+      await audioPlayer.setVolume(1.0);
       await audioPlayer.setLoopMode(LoopMode.off);
 
-      // Update state with new audio player
-      debugPrint('🎵 AudioPlayer: Updating state');
+      // Update state
       state = state.copyWith(
         audioPlayer: audioPlayer,
         isInitialized: true,
         isPlaying: false,
         position: Duration.zero,
-        currentLanguage: 'english', // Set default language to english
+        currentLanguage: 'english',
       );
 
       // Set up listeners
-      debugPrint('🎵 AudioPlayer: Setting up video controller listeners');
       _videoController!.addListener(_onVideoPositionChanged);
       _videoController!.addListener(_onVideoPlayStateChanged);
-      _videoController!.addListener(_onVideoVolumeChanged);
 
-      debugPrint('✅ AudioPlayer: Initialization complete');
+      Logger.success('AudioPlayer: Initialization complete');
     } catch (e) {
-      debugPrint('❌ AudioPlayer: Initialization failed: $e');
-      // Clean up on failure
+      Logger.error(
+          'AudioPlayer: Initialization failed', {'error': e.toString()});
       await dispose();
       rethrow;
     }
   }
 
-  /// Ensures the video player's audio is always muted
-  Future<void> _ensureVideoMuted() async {
-    if (_videoController == null) return;
-
-    debugPrint('🎵 AudioPlayer: Ensuring video is completely muted');
-
-    // Force mute the video player
-    await _videoController!.setVolume(0);
-
-    // Verify mute took effect
-    if (_videoController!.value.volume > 0) {
-      debugPrint('⚠️ AudioPlayer: Video not muted, retrying...');
-      // Try one more time
-      await _videoController!.setVolume(0);
-
-      // Final verification
-      if (_videoController!.value.volume > 0) {
-        debugPrint(
-            '❌ AudioPlayer: Failed to mute video after multiple attempts');
-        throw Exception('Failed to mute video audio track');
-      }
-    }
-    debugPrint('✅ AudioPlayer: Video completely muted');
-  }
-
-  /// Listener for video volume changes to ensure it stays muted
-  void _onVideoVolumeChanged() {
-    if (_videoController == null) return;
-
-    // If volume somehow got changed, mute it
-    if (_videoController!.value.volume > 0) {
-      debugPrint('⚠️ AudioPlayer: Video volume changed, re-muting...');
-      _videoController!.setVolume(0);
-    }
-  }
-
-  /// Switch to a different audio language
   Future<void> switchLanguage(String videoId, String language) async {
-    debugPrint('');
-    debugPrint('🚨 [AUDIO_DEBUG] ========================================');
-    debugPrint('🚨 [AUDIO_DEBUG] Starting switchLanguage');
-    debugPrint('🚨 [AUDIO_DEBUG] Params:');
-    debugPrint('🚨 [AUDIO_DEBUG] - videoId: $videoId');
-    debugPrint('🚨 [AUDIO_DEBUG] - language: $language');
-    debugPrint('🚨 [AUDIO_DEBUG] ========================================');
-    debugPrint('');
-
     if (state.isSyncing) {
-      debugPrint('🚨 [AUDIO_DEBUG] Already syncing, ignoring request');
+      Logger.debug('AudioPlayer: Already syncing, ignoring request');
       return;
     }
 
     if (!state.isInitialized || state.audioPlayer == null) {
-      debugPrint('🚨 [AUDIO_DEBUG] Audio player not initialized');
+      Logger.error('Audio player not initialized');
       throw Exception(
           'Audio player must be initialized before switching languages');
     }
 
     if (_videoController == null || !_videoController!.value.isInitialized) {
-      debugPrint('🚨 [AUDIO_DEBUG] No valid video controller');
+      Logger.error('No valid video controller');
       throw Exception('Video controller not initialized');
     }
 
     try {
-      debugPrint('🚨 [AUDIO_DEBUG] Starting language switch process');
+      Logger.debug('AudioPlayer: Starting language switch', {
+        'language': language,
+        'videoId': videoId,
+      });
+
       state = state.copyWith(isSyncing: true);
 
-      // Store current video state
+      // Store current playback state
       final wasPlaying = _videoController!.value.isPlaying;
       final currentPosition = _videoController!.value.position;
-      debugPrint('🚨 [AUDIO_DEBUG] Current state:');
-      debugPrint('🚨 [AUDIO_DEBUG] - wasPlaying: $wasPlaying');
-      debugPrint('🚨 [AUDIO_DEBUG] - position: $currentPosition');
 
       // Get the current user
       final user = ref.read(authStateProvider).valueOrNull;
       if (user == null) {
-        debugPrint('🚨 [AUDIO_DEBUG] No authenticated user found');
+        Logger.error('No authenticated user found');
         state = state.copyWith(isSyncing: false);
         throw Exception('User must be authenticated to switch languages');
       }
-      debugPrint('🚨 [AUDIO_DEBUG] Found user: ${user.uid}');
 
-      // Get audio URL using StoragePaths
-      final storage = FirebaseStorage.instance;
-      final audioPath = StoragePaths.audioFile(
-        user.uid,
-        videoId,
-        lang: language,
-        ext: 'mp3',
+      // Get audio URL and stop current playback
+      final audioUrl = await _mediaService.fetchMediaUrl(
+        userId: user.uid,
+        videoId: videoId,
+        type: 'audio',
+        language: language,
+        format: 'mp3',
       );
 
-      debugPrint('');
-      debugPrint('🚨 [AUDIO_DEBUG] ========================================');
-      debugPrint('🚨 [AUDIO_DEBUG] ATTEMPTING TO DOWNLOAD AUDIO');
-      debugPrint('🚨 [AUDIO_DEBUG] Relative path: $audioPath');
-      debugPrint(
-          '🚨 [AUDIO_DEBUG] Full storage URL: gs://reel-ai-cd001.appspot.com/$audioPath');
-      debugPrint('🚨 [AUDIO_DEBUG] ========================================');
-      debugPrint('');
-
-      late final String audioUrl;
-      try {
-        audioUrl = await storage.ref(audioPath).getDownloadURL();
-        Logger.audio('Successfully retrieved audio URL', {
-          'audioUrl': audioUrl,
-          'path': audioPath,
-        });
-        debugPrint('🎵 AudioPlayer: Loading audio from URL: $audioUrl');
-      } catch (e) {
-        Logger.error('Failed to get audio download URL', {
-          'error': e.toString(),
-          'path': audioPath,
-          'userId': user.uid,
-          'videoId': videoId,
-          'language': language,
-        });
-        state = state.copyWith(isSyncing: false);
-        rethrow;
-      }
-
-      // Reset positions and load new audio
+      // Stop current playback
       await state.audioPlayer!.stop();
 
-      try {
-        await state.audioPlayer!.setUrl(audioUrl);
-      } catch (e) {
-        debugPrint('❌ AudioPlayer: Failed to load audio URL: $e');
-        state = state.copyWith(isSyncing: false);
-        rethrow;
-      }
-
-      // Set up audio player
+      // Set up new audio
+      await state.audioPlayer!.setUrl(audioUrl);
       await state.audioPlayer!.setVolume(1.0);
-      final duration = await state.audioPlayer!.duration;
-      if (duration == null) {
-        state = state.copyWith(isSyncing: false);
-        throw Exception('Failed to load audio file');
-      }
 
-      // Seek both to the current position
-      await Future.wait([
-        _videoController!.seekTo(currentPosition),
-        state.audioPlayer!.seek(currentPosition),
-      ]);
+      // Sync positions
+      await _mediaService.syncAudioVideo(
+        videoController: _videoController!,
+        audioPlayer: state.audioPlayer!,
+        targetPosition: currentPosition,
+      );
 
       // Update state
       state = state.copyWith(
@@ -263,21 +175,26 @@ class AudioPlayerController extends _$AudioPlayerController {
         isPlaying: false,
       );
 
-      // Resume playback if it was playing before
+      // Resume if needed
       if (wasPlaying) {
-        await state.audioPlayer!.play();
-        await Future.delayed(const Duration(milliseconds: 50));
-        await _videoController!.play();
+        await _mediaService.updatePlaybackState(
+          videoController: _videoController!,
+          audioPlayer: state.audioPlayer!,
+          shouldPlay: true,
+        );
         state = state.copyWith(isPlaying: true);
       }
 
-      // Double check video is still muted
-      await _ensureVideoMuted();
+      // Ensure video is still muted
+      await _mediaService.ensureVideoMuted(_videoController!);
 
       // Update language provider
       ref.read(currentLanguageProvider(videoId).notifier).setLanguage(language);
+
+      Logger.success('AudioPlayer: Successfully switched to $language audio');
     } catch (e) {
-      debugPrint('❌ AudioPlayer: Language switch failed: $e');
+      Logger.error(
+          'AudioPlayer: Language switch failed', {'error': e.toString()});
       state = state.copyWith(isSyncing: false);
       rethrow;
     }
@@ -294,8 +211,11 @@ class AudioPlayerController extends _$AudioPlayerController {
     // If the difference is more than 50ms, sync the audio
     if ((videoPosition - audioPosition).abs() >
         const Duration(milliseconds: 50)) {
-      debugPrint(
-          '🎵 AudioPlayer: Syncing position - Video: ${videoPosition.inMilliseconds}ms, Audio: ${audioPosition.inMilliseconds}ms');
+      Logger.debug('AudioPlayer: Syncing position', {
+        'video': videoPosition.inMilliseconds,
+        'audio': audioPosition.inMilliseconds,
+      });
+
       state.audioPlayer?.seek(videoPosition);
       state = state.copyWith(position: videoPosition);
     }
@@ -305,93 +225,49 @@ class AudioPlayerController extends _$AudioPlayerController {
     if (_videoController == null || !state.isInitialized) return;
 
     final isVideoPlaying = _videoController!.value.isPlaying;
-    debugPrint(
-        '🎵 AudioPlayer: Video play state changed - Playing: $isVideoPlaying');
+    final audioPlayer = state.audioPlayer;
+
+    if (audioPlayer == null) {
+      Logger.warning('AudioPlayer is null when handling play state change');
+      return;
+    }
 
     if (isVideoPlaying && !state.isPlaying) {
-      debugPrint('🎵 AudioPlayer: Starting audio playback');
-      final audioPlayer = state.audioPlayer;
-      if (audioPlayer == null) {
-        debugPrint('❌ AudioPlayer: Audio player is null when trying to play');
-        return;
-      }
-
-      debugPrint('🎵 AudioPlayer: Current volume: ${audioPlayer.volume}');
-      debugPrint('🎵 AudioPlayer: Current position: ${audioPlayer.position}');
-      debugPrint('🎵 AudioPlayer: Is playing: ${audioPlayer.playing}');
-
-      audioPlayer.play().then((_) {
-        debugPrint('✅ AudioPlayer: Play command sent successfully');
-        debugPrint('🎵 AudioPlayer: New volume: ${audioPlayer.volume}');
-        debugPrint('🎵 AudioPlayer: Is now playing: ${audioPlayer.playing}');
+      Logger.debug('AudioPlayer: Starting playback');
+      _mediaService
+          .updatePlaybackState(
+        videoController: _videoController!,
+        audioPlayer: audioPlayer,
+        shouldPlay: true,
+      )
+          .then((_) {
+        state = state.copyWith(isPlaying: true);
       }).catchError((error) {
-        debugPrint('❌ AudioPlayer: Failed to start playback: $error');
+        Logger.error('Failed to start playback', {'error': error.toString()});
       });
-
-      state = state.copyWith(isPlaying: true);
     } else if (!isVideoPlaying && state.isPlaying) {
-      debugPrint('🎵 AudioPlayer: Pausing audio playback');
-      final audioPlayer = state.audioPlayer;
-      if (audioPlayer == null) {
-        debugPrint('❌ AudioPlayer: Audio player is null when trying to pause');
-        return;
-      }
-
-      audioPlayer.pause().then((_) {
-        debugPrint('✅ AudioPlayer: Pause command sent successfully');
+      Logger.debug('AudioPlayer: Pausing playback');
+      _mediaService
+          .updatePlaybackState(
+        videoController: _videoController!,
+        audioPlayer: audioPlayer,
+        shouldPlay: false,
+      )
+          .then((_) {
+        state = state.copyWith(isPlaying: false);
       }).catchError((error) {
-        debugPrint('❌ AudioPlayer: Failed to pause playback: $error');
+        Logger.error('Failed to pause playback', {'error': error.toString()});
       });
-
-      state = state.copyWith(
-        isPlaying: false,
-        isInitialized: state.isInitialized,
-        audioPlayer: state.audioPlayer,
-        position: state.position,
-        currentLanguage: state.currentLanguage,
-      );
     }
   }
 
-  /// Clean up resources
   Future<void> dispose() async {
-    debugPrint('🎵 AudioPlayer: Disposing resources');
+    Logger.debug('AudioPlayer: Disposing resources');
     _videoController?.removeListener(_onVideoPositionChanged);
     _videoController?.removeListener(_onVideoPlayStateChanged);
-    _videoController?.removeListener(_onVideoVolumeChanged);
     await state.audioPlayer?.dispose();
     _videoController = null;
     state = const AudioPlayerState();
-    debugPrint('✅ AudioPlayer: Resources disposed');
-  }
-
-  /// Test function to completely mute all audio
-  Future<void> muteEverything() async {
-    debugPrint('🔇 AudioPlayer: MUTING ALL AUDIO SOURCES');
-
-    // Mute video player if it exists
-    if (_videoController != null) {
-      debugPrint('🔇 AudioPlayer: Muting video player');
-      await _videoController!.setVolume(0);
-      if (_videoController!.value.volume > 0) {
-        debugPrint('⚠️ AudioPlayer: Video still not muted, trying again');
-        await _videoController!.setVolume(0);
-      }
-    }
-
-    // Mute audio player if it exists
-    if (state.audioPlayer != null) {
-      debugPrint('🔇 AudioPlayer: Muting just_audio player');
-      await state.audioPlayer!.setVolume(0);
-
-      // Verify audio player is muted
-      if (state.audioPlayer!.volume > 0) {
-        debugPrint(
-            '⚠️ AudioPlayer: Audio player still not muted, trying again');
-        await state.audioPlayer!.setVolume(0);
-      }
-    }
-
-    debugPrint('🔇 AudioPlayer: All audio sources should now be muted');
+    Logger.debug('AudioPlayer: Resources disposed');
   }
 }

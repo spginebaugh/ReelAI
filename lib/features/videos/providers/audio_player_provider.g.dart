@@ -35,7 +35,7 @@ Map<String, dynamic> _$$AudioPlayerStateImplToJson(
 // **************************************************************************
 
 String _$audioPlayerControllerHash() =>
-    r'5fcc6c6bab475972cc5dbe3e221cbfb4802f65b2';
+    r'81e86b406daa6173f483ad8a5421e17e0bf3ea59';
 
 /// Provider that manages audio playback and synchronization with video
 ///

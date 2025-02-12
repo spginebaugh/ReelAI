@@ -229,9 +229,8 @@ class VideoService extends BaseService {
             });
 
             try {
-              final audioPath =
-                  await _ffmpegProcessor.extractAudio(videoFile.path);
-              extractedAudioFile = File(audioPath);
+              extractedAudioFile =
+                  await _ffmpegProcessor.extractAudio(videoFile);
 
               if (!await extractedAudioFile.exists()) {
                 throw AppError(
@@ -242,12 +241,12 @@ class VideoService extends BaseService {
                   context: {
                     'videoId': videoId,
                     'videoPath': videoFile.path,
-                    'audioPath': audioPath,
+                    'audioPath': extractedAudioFile.path,
                   },
                 );
               }
               Logger.success('Audio extraction completed', {
-                'audioPath': audioPath,
+                'audioPath': extractedAudioFile.path,
               });
 
               Logger.info('Starting audio upload');
@@ -366,11 +365,11 @@ class VideoService extends BaseService {
         );
 
         // Extract and upload audio
-        final audioFile = await _ffmpegProcessor.extractAudio(videoPath);
+        final audioFile = await _ffmpegProcessor.extractAudio(videoFile);
         final audioUrl = await _storageService.uploadAudio(
           userId: userId,
           videoId: videoId,
-          audioFile: File(audioFile),
+          audioFile: audioFile,
         );
 
         return (videoUrl, audioUrl);

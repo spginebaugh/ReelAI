@@ -8,7 +8,6 @@ import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 import 'package:reel_ai/features/videos/providers/audio_player_provider.dart';
 import 'package:reel_ai/features/videos/widgets/subtitle_display.dart';
 import 'package:reel_ai/features/videos/widgets/toolbar/edit_toolbar.dart';
-import 'package:reel_ai/features/videos/widgets/toolbar/panel_container.dart';
 import 'package:reel_ai/features/videos/widgets/toolbar/features/video_player_section/video_player_section.dart';
 
 class EditVideoScreen extends ConsumerStatefulWidget {
@@ -113,16 +112,8 @@ class _EditVideoScreenState extends ConsumerState<EditVideoScreen> {
                   const Positioned(
                     left: 0,
                     right: 0,
-                    bottom: 80, // Position above the panel container
+                    bottom: 20,
                     child: SubtitleDisplay(),
-                  ),
-
-                  // Bottom panel
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: const PanelContainer(),
                   ),
                 ],
               ),

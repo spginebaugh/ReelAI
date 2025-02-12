@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:reel_ai/features/videos/models/filter_option.dart';
 import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/common/services/base_service.dart';
 import 'package:reel_ai/features/videos/services/processing/ffmpeg_processor.dart';
@@ -32,124 +31,24 @@ class VideoProcessor extends BaseService {
     return _player.getVideoDuration(video);
   }
 
-  /// Apply filters to a video file
-  Future<String> applyFilters({
-    required File inputFile,
-    required FilterOption filter,
-    required double brightness,
-    String? outputPath,
-  }) async {
-    final output = outputPath ??
-        (await VideoFileUtils.createTempVideoFile(prefix: 'filtered')).path;
-    return _ffmpeg.applyFilters(
-      inputFile: inputFile,
-      filter: filter,
-      brightness: brightness,
-      outputPath: output,
-    );
-  }
-
-  /// Trim a video file
-  Future<String?> trimVideo({
-    required File inputFile,
-    required double startValue,
-    required double endValue,
-  }) async {
-    final duration = endValue - startValue;
-    if (duration <= 0) return null;
-
-    return _ffmpeg.trimVideo(
-      inputFile: inputFile,
-      startSeconds: startValue,
-      duration: duration,
-    );
-  }
-
-  /// Process a video with optional filters, brightness adjustment, and trimming
-  Future<String> processVideo({
-    required File video,
-    FilterOption? filter,
-    double? brightness,
-    double? startTime,
-    double? duration,
-  }) async {
-    return executeOperation<String>(
-      operation: () async {
-        await VideoErrorHandler.validateVideoOperation(
-          input: video,
-          params: {
-            'filter': filter,
-            'brightness': brightness,
-            'startTime': startTime,
-            'duration': duration,
-          },
-        );
-
-        File currentVideo = video;
-        final filesToCleanup = <String>[];
-
-        try {
-          // Apply trimming if requested
-          if (startTime != null && duration != null) {
-            final trimmedPath = await _ffmpeg.trimVideo(
-              inputFile: currentVideo,
-              startSeconds: startTime,
-              duration: duration,
-            );
-
-            if (currentVideo.path != video.path) {
-              filesToCleanup.add(currentVideo.path);
-            }
-            currentVideo = File(trimmedPath);
-          }
-
-          // Apply filters if requested
-          if (filter != null || brightness != null) {
-            final filteredPath = await VideoFileUtils.createTempVideoFile(
-              prefix: 'filtered',
-            );
-
-            await _ffmpeg.applyFilters(
-              inputFile: currentVideo,
-              filter: filter ?? FilterOption.none,
-              brightness: brightness ?? 1.0,
-              outputPath: filteredPath.path,
-            );
-
-            if (currentVideo.path != video.path) {
-              filesToCleanup.add(currentVideo.path);
-            }
-            currentVideo = filteredPath;
-          }
-
-          return currentVideo.path;
-        } catch (e) {
-          // Clean up any temporary files on error
-          for (final path in filesToCleanup) {
-            await _ffmpeg.cleanupFile(path);
-          }
-          if (currentVideo.path != video.path) {
-            await _ffmpeg.cleanupFile(currentVideo.path);
-          }
-          VideoErrorHandler.handleProcessingError(
-            e,
-            operation: 'processVideo',
-            throwProcessingException: false,
-          );
-          rethrow;
-        }
-      },
-      operationName: 'processVideo',
-      errorCategory: ErrorCategory.video,
-    );
-  }
-
   /// Extract audio from a video file
   Future<String> extractAudio(File video) async {
     return executeOperation<String>(
       operation: () async {
         await VideoErrorHandler.validateVideoOperation(input: video);
-        return _ffmpeg.extractAudio(video.path);
+        final outputPath = await VideoFileUtils.createTempVideoFile(
+          prefix: 'audio',
+          extension: 'wav',
+        );
+
+        await _ffmpeg.executeFFmpegCommand(
+          command:
+              '-i "${video.path}" -vn -acodec pcm_s16le -ar 44100 -ac 2 -f wav "${outputPath.path}"',
+          operationName: 'extractAudio',
+          outputPath: outputPath.path,
+        );
+
+        return outputPath.path;
       },
       operationName: 'extractAudio',
       errorCategory: ErrorCategory.processing,
@@ -160,9 +59,7 @@ class VideoProcessor extends BaseService {
   Future<void> cleanup(List<String?> filePaths) async {
     await executeOperation(
       operation: () async {
-        for (final path in filePaths.whereType<String>()) {
-          await _ffmpeg.cleanupFile(path);
-        }
+        await _ffmpeg.cleanup(filePaths);
       },
       operationName: 'cleanup',
       errorCategory: ErrorCategory.video,

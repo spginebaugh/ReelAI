@@ -3,9 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/features/videos/models/video_edit_state.dart';
 import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
-import 'features/brightness/brightness_button.dart';
-import 'features/filter/filter_button.dart';
-import 'features/trim/trim_button.dart';
 import 'features/metadata/metadata_button.dart';
 import 'features/audio/audio_button.dart';
 import 'features/subtitles/subtitle_button.dart';
@@ -45,13 +42,7 @@ class EditToolbar extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               MetadataButton(video: video),
-              const SizedBox(height: 100),
-              const TrimButton(),
-              const SizedBox(height: 16),
-              const FilterButton(),
-              const SizedBox(height: 16),
-              const BrightnessButton(),
-              const SizedBox(height: 100),
+              const Spacer(),
               AudioButton(video: video),
               const SizedBox(height: 16),
               SubtitleButton(video: video),

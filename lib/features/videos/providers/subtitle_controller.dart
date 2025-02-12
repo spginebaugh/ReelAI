@@ -1,15 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/rendering.dart';
 
 import 'package:reel_ai/features/videos/models/subtitle_state.dart';
 import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
+import 'package:reel_ai/common/utils/logger.dart';
+import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
+import 'video_media_provider.dart';
 
 part 'subtitle_controller.g.dart';
 
@@ -17,6 +24,7 @@ part 'subtitle_controller.g.dart';
 class SubtitleController extends _$SubtitleController {
   Timer? _updateTimer;
   VideoPlayerController? _videoController;
+  VideoMediaService get _mediaService => ref.read(videoMediaProvider);
 
   List<String> get availableLanguages => state.availableLanguages;
 
@@ -34,6 +42,8 @@ class SubtitleController extends _$SubtitleController {
     VideoPlayerController controller,
     String subtitleUrl,
   ) async {
+    Logger.debug('Subtitles: Initializing with video controller');
+
     _updateTimer?.cancel();
     _videoController?.removeListener(_onVideoStateChanged);
 
@@ -46,51 +56,88 @@ class SubtitleController extends _$SubtitleController {
 
     // Start position tracking
     _startPositionTracking();
+
+    Logger.success('Subtitles: Initialization complete');
   }
 
   Future<List<SubtitleCue>> _loadSubtitlesFromUrl(String url) async {
+    Logger.debug('Subtitles: Loading from URL', {'url': url});
+
+    final stopwatch = Stopwatch()..start();
     final response = await http.get(Uri.parse(url));
+
     if (response.statusCode != 200) {
-      throw Exception('Failed to load subtitles');
+      Logger.error('Failed to load subtitles', {
+        'statusCode': response.statusCode,
+        'url': url,
+      });
+      throw Exception('Failed to load subtitles: ${response.statusCode}');
     }
 
-    // Explicitly decode the response body as UTF-8
-    final String decodedContent = utf8.decode(response.bodyBytes);
-    final List<SubtitleCue> subtitles = [];
-    final lines = const LineSplitter().convert(decodedContent);
+    final lines = const LineSplitter().convert(response.body);
+    final totalLines = lines.length;
+    final subtitles = <SubtitleCue>[];
 
     int i = 0;
     while (i < lines.length) {
       final line = lines[i].trim();
 
-      // Skip empty lines and WEBVTT header
-      if (line.isEmpty || line == 'WEBVTT') {
+      // Skip empty lines and WebVTT header
+      if (line.isEmpty || line.startsWith('WEBVTT')) {
         i++;
         continue;
       }
 
       // Parse timestamp line
-      if (line.contains('-->')) {
-        final times = line.split('-->');
-        final startTime = times[0].trim();
-        final endTime = times[1].trim();
+      final timestampMatch =
+          RegExp(r'(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3})')
+              .firstMatch(line);
 
-        // Get subtitle text (may be multiple lines)
+      if (timestampMatch != null) {
+        final start = _parseTimestamp(timestampMatch.group(1)!);
+        final end = _parseTimestamp(timestampMatch.group(2)!);
+
+        // Collect text lines until next empty line or end
+        final textLines = <String>[];
         i++;
-        String text = '';
         while (i < lines.length && lines[i].trim().isNotEmpty) {
-          text += lines[i].trim() + '\n';
+          textLines.add(lines[i].trim());
           i++;
         }
-        text = text.trim();
 
-        subtitles.add(SubtitleCue.fromVTT(startTime, endTime, text));
-      } else {
-        i++;
+        if (textLines.isNotEmpty) {
+          subtitles.add(SubtitleCue(
+            start: start,
+            end: end,
+            text: textLines.join('\n'),
+          ));
+        }
       }
+      i++;
     }
 
+    Logger.debug('Subtitles: Parsed ${subtitles.length} cues', {
+      'totalLines': totalLines,
+      'parseTime': stopwatch.elapsedMilliseconds,
+    });
+
     return subtitles;
+  }
+
+  Duration _parseTimestamp(String timestamp) {
+    final parts = timestamp.split(':');
+    final hours = int.parse(parts[0]);
+    final minutes = int.parse(parts[1]);
+    final secondsAndMs = parts[2].split('.');
+    final seconds = int.parse(secondsAndMs[0]);
+    final milliseconds = int.parse(secondsAndMs[1]);
+
+    return Duration(
+      hours: hours,
+      minutes: minutes,
+      seconds: seconds,
+      milliseconds: milliseconds,
+    );
   }
 
   void _startPositionTracking() {
@@ -168,94 +215,61 @@ class SubtitleController extends _$SubtitleController {
   }
 
   Future<void> loadLanguage(String videoId, String language) async {
+    Logger.debug('Subtitles: Loading language', {'language': language});
+
     try {
       final user = ref.read(authStateProvider).requireValue!;
-      final storage = FirebaseStorage.instance;
-      final subtitlePath = StoragePaths.subtitlesFile(
-        user.uid,
-        videoId,
-        lang: language,
+
+      // Get the subtitle URL
+      final subtitleUrl = await _mediaService.fetchMediaUrl(
+        userId: user.uid,
+        videoId: videoId,
+        type: 'subtitles',
+        language: language,
         format: 'vtt',
       );
 
-      // Get the subtitle URL from Firebase Storage
-      final subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
-
-      // Load the subtitles for this language
+      // Load the subtitles
       final subtitles = await _loadSubtitlesFromUrl(subtitleUrl);
 
       // Update state with new subtitles and language, and turn visibility on
       state = state.copyWith(
         subtitles: subtitles,
         language: language,
-        isVisible: true, // Turn visibility on when loading a language
+        isVisible: true,
       );
 
       // Restart position tracking since we turned visibility on
       _startPositionTracking();
+
+      Logger.success('Subtitles: Successfully switched to $language subtitles');
     } catch (e) {
-      debugPrint('Error loading subtitles: $e');
+      Logger.error('Failed to load subtitles', {
+        'error': e.toString(),
+        'language': language,
+      });
       rethrow;
     }
   }
 
   Future<void> loadAvailableLanguages(String videoId, String userId) async {
     try {
-      final storage = FirebaseStorage.instance;
-      final subtitlesDir =
-          '${StoragePaths.videoDirectory(userId, videoId)}/subtitles';
+      final languages = await _mediaService.listAvailableLanguages(
+        userId: userId,
+        videoId: videoId,
+        type: 'subtitles',
+        fileExtension: 'vtt',
+      );
 
-      debugPrint('🎬 Subtitles: Listing files in $subtitlesDir');
-      final result = await storage.ref(subtitlesDir).listAll();
-
-      debugPrint('🎬 Subtitles: Found ${result.items.length} files:');
-      for (final ref in result.items) {
-        debugPrint('   - ${ref.name}');
-      }
-
-      debugPrint('🎬 Subtitles: Filtering for .vtt files...');
-      final vttFiles =
-          result.items.where((ref) => ref.name.endsWith('.vtt')).toList();
-      debugPrint('🎬 Subtitles: Found ${vttFiles.length} .vtt files:');
-      for (final ref in vttFiles) {
-        debugPrint('   - ${ref.name}');
-      }
-
-      debugPrint('🎬 Subtitles: Extracting languages...');
-      final languages = vttFiles
-          .map((ref) {
-            final parts = ref.name.split('_');
-            debugPrint('   - Processing ${ref.name}:');
-            debugPrint('     * Parts: ${parts.join(" | ")}');
-            if (parts.length != 2) {
-              debugPrint('     * Skipped: Wrong number of parts');
-              return null;
-            }
-            final lang = parts[1].split('.')[0];
-            debugPrint('     * Extracted language: $lang');
-            return lang;
-          })
-          .where((lang) => lang != null)
-          .map((lang) => lang!)
-          .toList();
-
-      debugPrint('🎬 Subtitles: Extracted languages: $languages');
-
-      // Ensure English is first if available
-      if (languages.contains('english')) {
-        languages.remove('english');
-        languages.insert(0, 'english');
-        debugPrint('🎬 Subtitles: Reordered with English first: $languages');
-      }
-
-      // Update state with available languages
       state = state.copyWith(availableLanguages: languages);
-      debugPrint(
-          '🎬 Subtitles: Updated state with languages: ${state.availableLanguages}');
-    } catch (e, st) {
-      debugPrint('❌ Subtitles: Error loading available languages:');
-      debugPrint('Error: $e');
-      debugPrint('Stack trace: $st');
+
+      Logger.success('Subtitles: Loaded available languages', {
+        'languages': languages,
+      });
+    } catch (e) {
+      Logger.error('Failed to load available languages', {
+        'error': e.toString(),
+      });
       rethrow;
     }
   }

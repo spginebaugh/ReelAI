@@ -13,7 +13,7 @@ class VideoPlayerSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (editState.isLoading) {
+    if (editState.status == VideoEditStatus.loading) {
       return const Center(child: CircularProgressIndicator());
     }
 

@@ -6,22 +6,23 @@ import 'package:path_provider/path_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/features/videos/models/video_edit_state.dart';
-import 'package:reel_ai/features/videos/models/filter_option.dart';
 import 'package:reel_ai/features/videos/services/processing/video_processor.dart';
 import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
-import 'audio_player_provider.dart';
-import 'subtitle_controller.dart';
-import 'package:flutter/foundation.dart';
-import 'video_controller_provider.dart';
 import 'package:reel_ai/common/utils/logger.dart';
 import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
+import 'audio_player_provider.dart';
+import 'subtitle_controller.dart';
+import 'video_controller_provider.dart';
+import 'video_media_provider.dart';
 
 part 'video_edit_provider.g.dart';
 
 @riverpod
 class VideoEditController extends _$VideoEditController {
   VideoProcessor get _videoService => VideoProcessor();
+  VideoMediaService get _mediaService => ref.read(videoMediaProvider);
 
   @override
   Future<VideoEditState> build() async {
@@ -70,7 +71,6 @@ class VideoEditController extends _$VideoEditController {
     }
   }
 
-  // Initialize Video System
   Future<void> _initializeVideoPlayer(File videoFile) async {
     Logger.video('Initializing video player system', {'path': videoFile.path});
 
@@ -78,18 +78,9 @@ class VideoEditController extends _$VideoEditController {
         .read(videoControllerManagerProvider)
         .createAndVerifyControllers(videoFile);
 
-    final duration = await _videoService.getVideoDuration(videoFile);
-
     _updateState((currentState) => currentState.copyWith(
-          isProcessing: false,
-          isLoading: false,
-          isPlaying: false,
-          isInitialized: true,
+          status: VideoEditStatus.ready,
           currentMode: EditingMode.none,
-          startValue: 0,
-          endValue: duration,
-          brightness: 1.0,
-          selectedFilter: FilterOption.none,
           tempVideoFile: videoFile,
           videoPlayerController: videoPlayerController,
           chewieController: chewieController,
@@ -102,7 +93,7 @@ class VideoEditController extends _$VideoEditController {
     VideoPlayerController controller,
     String videoId,
   ) async {
-    debugPrint('🔊 Initializing audio system');
+    Logger.debug('Initializing audio system');
     await ref
         .read(audioPlayerControllerProvider.notifier)
         .initialize(controller);
@@ -118,7 +109,7 @@ class VideoEditController extends _$VideoEditController {
     String userId,
     String subtitleUrl,
   ) async {
-    debugPrint('📝 Initializing subtitle system');
+    Logger.debug('Initializing subtitle system');
     await ref
         .read(subtitleControllerProvider.notifier)
         .initialize(controller, subtitleUrl);
@@ -128,302 +119,135 @@ class VideoEditController extends _$VideoEditController {
         .loadAvailableLanguages(videoId, userId);
   }
 
-  // Main Methods
   Future<void> initializeVideo(Video video) async {
-    if (state.value?.isInitialized ?? false) return;
+    if (state.value?.status == VideoEditStatus.ready) return;
 
-    state = const AsyncValue.loading();
+    state = AsyncValue.data(VideoEditState.initial().copyWith(
+      status: VideoEditStatus.loading,
+    ));
 
     try {
       Logger.group('Video Initialization', () {
         Logger.video('Starting video initialization', {'videoId': video.id});
       });
 
-      final tempFile = await _videoService.downloadVideo(video.videoUrl);
+      // Get user
+      final user = ref.read(authStateProvider).requireValue!;
 
-      // Log the state before initialization
-      Logger.debug('State before initialization', {
-        'tempFile': tempFile.path,
-        'isInitialized': state.value?.isInitialized,
-        'hasVideoController': state.value?.videoPlayerController != null,
-        'hasChewieController': state.value?.chewieController != null,
+      // Start all resource fetching in parallel
+      Logger.debug('Starting parallel resource fetching', {
+        'videoId': video.id,
+        'userId': user.uid,
       });
 
+      // 1. Start video download
+      final videoDownloadFuture = _videoService.downloadVideo(video.videoUrl);
+
+      // 2. Start subtitle URL fetch
+      final subtitleUrlFuture = _mediaService
+          .fetchMediaUrl(
+        userId: user.uid,
+        videoId: video.id,
+        type: 'subtitles',
+        format: 'vtt',
+      )
+          .catchError((e) {
+        Logger.warning('No subtitles found', {'error': e.toString()});
+        return null;
+      });
+
+      // 3. Start audio URL fetch
+      final audioUrlFuture = _mediaService
+          .fetchMediaUrl(
+        userId: user.uid,
+        videoId: video.id,
+        type: 'audio',
+        format: 'mp3',
+      )
+          .catchError((e) {
+        Logger.warning('No audio found', {'error': e.toString()});
+        return null;
+      });
+
+      // Wait for video download to complete first (we need this to proceed)
+      Logger.debug('Waiting for video download to complete');
+      final videoFile = await videoDownloadFuture;
+
+      // Initialize video player
+      Logger.debug('Initializing video player');
       try {
-        await _initializeVideoPlayer(tempFile);
+        await _initializeVideoPlayer(videoFile);
       } catch (e, st) {
         Logger.error('Failed to initialize video player', {
           'error': e.toString(),
           'stackTrace': st.toString(),
-          'tempFile': tempFile.path,
+          'tempFile': videoFile.path,
         });
+        state = AsyncValue.data(state.value!.copyWith(
+          status: VideoEditStatus.error,
+          errorMessage: 'Failed to initialize video player: ${e.toString()}',
+        ));
         rethrow;
       }
 
-      // Get subtitle URL
-      final storage = FirebaseStorage.instance;
-      final user = ref.read(authStateProvider).requireValue!;
-      final subtitlePath = StoragePaths.subtitlesFile(
-        user.uid,
-        video.id,
-        format: 'vtt',
-      );
-
-      String? subtitleUrl;
-      try {
-        subtitleUrl = await storage.ref(subtitlePath).getDownloadURL();
-        Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
-      } catch (e) {
-        Logger.warning('No subtitles found', {
-          'error': e.toString(),
-          'path': subtitlePath,
-        });
-      }
-
-      // Initialize audio and subtitles
+      // Get the initialized video controller
       final videoPlayerController = state.value!.videoPlayerController!;
 
-      try {
-        await _initializeAudioSystem(videoPlayerController, video.id);
-      } catch (e, st) {
-        Logger.error('Failed to initialize audio system', {
-          'error': e.toString(),
-          'stackTrace': st.toString(),
-          'videoId': video.id,
-        });
-        rethrow;
-      }
+      // Wait for remaining resources and initialize systems in parallel
+      Logger.debug('Waiting for remaining resources and initializing systems');
+      await Future.wait([
+        // Wait for subtitle URL and initialize subtitles
+        subtitleUrlFuture.then((subtitleUrl) async {
+          if (subtitleUrl != null) {
+            Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
+            await _initializeSubtitleSystem(
+              videoPlayerController,
+              video.id,
+              user.uid,
+              subtitleUrl,
+            );
+          }
+        }),
 
-      if (subtitleUrl != null) {
-        try {
-          await _initializeSubtitleSystem(
-            videoPlayerController,
-            video.id,
-            user.uid,
-            subtitleUrl,
-          );
-        } catch (e, st) {
-          Logger.error('Failed to initialize subtitle system', {
-            'error': e.toString(),
-            'stackTrace': st.toString(),
-            'subtitleUrl': subtitleUrl,
-          });
-          rethrow;
-        }
-      }
+        // Wait for audio URL and initialize audio
+        audioUrlFuture.then((audioUrl) async {
+          if (audioUrl != null) {
+            Logger.audio('Got audio URL', {'url': audioUrl});
+            await _initializeAudioSystem(videoPlayerController, video.id);
+          }
+        }),
+      ]);
 
       Logger.success('Video initialization completed successfully');
+      state = AsyncValue.data(state.value!.copyWith(
+        status: VideoEditStatus.ready,
+      ));
     } catch (e, st) {
-      // Log the full state when error occurs
-      try {
-        final currentState = state.value;
-        Logger.error('Video initialization failed - Current State', {
-          'isProcessing': currentState?.isProcessing,
-          'isLoading': currentState?.isLoading,
-          'isPlaying': currentState?.isPlaying,
-          'isInitialized': currentState?.isInitialized,
-          'currentMode': currentState?.currentMode.toString(),
-          'startValue': currentState?.startValue,
-          'endValue': currentState?.endValue,
-          'brightness': currentState?.brightness,
-          'selectedFilter': currentState?.selectedFilter.toString(),
-          'tempVideoFile': currentState?.tempVideoFile?.path,
-          'currentPreviewPath': currentState?.currentPreviewPath,
-          'processedVideoPath': currentState?.processedVideoPath,
-          'hasVideoController': currentState?.videoPlayerController != null,
-          'hasChewieController': currentState?.chewieController != null,
-        });
-      } catch (logError) {
-        Logger.error('Failed to log state during error', {
-          'logError': logError.toString(),
-        });
-      }
-
-      if (e is JsonUnsupportedObjectError) {
-        Logger.error('JSON Serialization Error Details', {
-          'unsupportedObject': e.unsupportedObject?.runtimeType.toString(),
-          'cause': e.cause,
-          'stackTrace': st.toString(),
-        });
-      }
-
-      final appError = ErrorHandler.handleError(e, st);
-      Logger.error('Error initializing video', {
-        'error': appError.toString(),
-        'originalError': e.toString(),
-        'errorType': e.runtimeType.toString(),
+      Logger.error('Video initialization failed', {
+        'error': e.toString(),
         'stackTrace': st.toString(),
       });
-      state = AsyncValue.error(appError, st);
+      state = AsyncValue.data(VideoEditState.initial().copyWith(
+        status: VideoEditStatus.error,
+        errorMessage: e.toString(),
+      ));
     }
   }
 
-  Future<void> _prepareFilterApplication(VideoEditState currentState) async {
-    currentState.chewieController?.pause();
-    await _cleanupPreviousFiles([currentState.currentPreviewPath]);
-  }
-
-  Future<String> _createFilteredVideo(
-    VideoEditState currentState,
-    String outputPath,
-  ) async {
-    return _videoService.applyFilters(
-      inputFile: currentState.tempVideoFile!,
-      filter: currentState.selectedFilter,
-      brightness: currentState.brightness,
-      outputPath: outputPath,
-    );
-  }
-
-  Future<void> applyFilters() async {
-    final currentState = state.value;
-    if (currentState == null || currentState.isProcessing) return;
-
-    _updateState((state) => state.copyWith(isProcessing: true));
-
-    try {
-      Logger.group('Applying Filters', () {
-        Logger.video('Starting filter application', {
-          'filter': currentState.selectedFilter,
-          'brightness': currentState.brightness,
-        });
-      });
-
-      await _prepareFilterApplication(currentState);
-
-      final tempDir = await getTemporaryDirectory();
-      final outputPath =
-          '${tempDir.path}/preview_${DateTime.now().millisecondsSinceEpoch}.mp4';
-
-      final filteredPath = await _createFilteredVideo(currentState, outputPath);
-
-      final (videoPlayerController, chewieController) = await ref
-          .read(videoControllerManagerProvider)
-          .createAndVerifyControllers(File(filteredPath));
-
-      _updateState((state) => state.copyWith(
-            currentPreviewPath: filteredPath,
-            isProcessing: false,
-            videoPlayerController: videoPlayerController,
-            chewieController: chewieController,
-          ));
-
-      Logger.success('Filters applied successfully');
-    } catch (e, st) {
-      final appError = ErrorHandler.handleError(e, st);
-      Logger.error('Error applying filters', {
-        'error': appError.toString(),
-        'originalError': e,
-        'stackTrace': st,
-      });
-      state = AsyncValue.error(appError, st);
-    }
-  }
-
-  Future<void> _prepareTrimming(VideoEditState currentState) async {
-    ref.read(videoControllerManagerProvider).disposeControllers(
-          videoPlayerController: currentState.videoPlayerController,
-          chewieController: currentState.chewieController,
-        );
-  }
-
-  Future<String?> _performTrimOperation(VideoEditState currentState) async {
-    return _videoService.trimVideo(
-      inputFile: currentState.tempVideoFile!,
-      startValue: currentState.startValue,
-      endValue: currentState.endValue,
-    );
-  }
-
-  Future<void> processVideo() async {
-    final currentState = state.value;
-    if (currentState == null || currentState.isProcessing) return;
-
-    _updateState((state) => state.copyWith(isProcessing: true));
-
-    try {
-      await _prepareTrimming(currentState);
-      final outputPath = await _performTrimOperation(currentState);
-
-      if (outputPath != null) {
-        final trimmedFile = File(outputPath);
-        final (videoPlayerController, chewieController) = await ref
-            .read(videoControllerManagerProvider)
-            .createAndVerifyControllers(trimmedFile);
-
-        final duration = await _videoService.getVideoDuration(trimmedFile);
-
-        await _cleanupPreviousFiles([currentState.tempVideoFile?.path]);
-
-        _updateState((state) => state.copyWith(
-              processedVideoPath: outputPath,
-              isProcessing: false,
-              tempVideoFile: trimmedFile,
-              videoPlayerController: videoPlayerController,
-              chewieController: chewieController,
-              startValue: 0,
-              endValue: duration,
-              currentMode: EditingMode.none,
-            ));
-      }
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  // State Update Methods
   void setMode(EditingMode mode) {
     _updateState((state) => state.copyWith(currentMode: mode));
   }
 
-  void updateStartValue(double value) {
-    _updateState((state) => state.copyWith(startValue: value));
-  }
-
-  void updateEndValue(double value) {
-    _updateState((state) => state.copyWith(endValue: value));
-  }
-
-  void updatePlayingState(bool isPlaying) {
-    _updateState((state) => state.copyWith(isPlaying: isPlaying));
-  }
-
-  void updateFilter(FilterOption filter) {
-    _updateState((state) => state.copyWith(selectedFilter: filter));
-    applyFilters();
-  }
-
-  void updateBrightness(double value) {
-    _updateState((state) => state.copyWith(brightness: value));
-  }
-
-  Future<void> muteAllAudio() async {
-    Logger.audio('Muting all audio sources');
-
-    final currentState = state.value;
-    if (currentState == null) return;
-
-    try {
-      if (currentState.videoPlayerController != null) {
-        await ref
-            .read(videoControllerManagerProvider)
-            .ensureControllersMuted(currentState.videoPlayerController!);
+  void togglePlayback() {
+    _updateState((currentState) {
+      if (currentState.status == VideoEditStatus.playing) {
+        currentState.videoPlayerController?.pause();
+        return currentState.copyWith(status: VideoEditStatus.ready);
+      } else if (currentState.status == VideoEditStatus.ready) {
+        currentState.videoPlayerController?.play();
+        return currentState.copyWith(status: VideoEditStatus.playing);
       }
-
-      if (currentState.chewieController != null) {
-        currentState.chewieController!.setVolume(0);
-      }
-
-      await ref.read(audioPlayerControllerProvider.notifier).muteEverything();
-      Logger.success('All audio sources muted successfully');
-    } catch (e, st) {
-      final appError = ErrorHandler.handleError(e, st);
-      Logger.error('Error muting audio', {
-        'error': appError.toString(),
-        'originalError': e,
-        'stackTrace': st,
-      });
-      throw appError;
-    }
+      return currentState;
+    });
   }
 }
