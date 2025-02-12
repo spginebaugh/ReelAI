@@ -74,7 +74,9 @@ class SubtitleController extends _$SubtitleController {
       throw Exception('Failed to load subtitles: ${response.statusCode}');
     }
 
-    final lines = const LineSplitter().convert(response.body);
+    // Ensure proper UTF-8 decoding of the response body
+    final content = utf8.decode(response.bodyBytes, allowMalformed: true);
+    final lines = const LineSplitter().convert(content);
     final totalLines = lines.length;
     final subtitles = <SubtitleCue>[];
 

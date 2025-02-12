@@ -32,7 +32,7 @@ class SubtitleDisplay extends HookConsumerWidget {
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 100),
       alignment: Alignment.center,
       child: Text(
         subtitleState.currentCue!.text,
