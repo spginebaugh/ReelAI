@@ -5,7 +5,7 @@ import 'firestore_service.dart';
 import 'storage_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'ffmpeg_service.dart';
+import 'video/processing/ffmpeg_processor.dart';
 import 'base_service.dart';
 import '../utils/error_handler.dart';
 import '../utils/transaction_decorator.dart';
@@ -29,7 +29,7 @@ class VideoService extends BaseService {
   final FirestoreService _firestoreService;
   final StorageService _storageService;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FFmpegService _ffmpegService = FFmpegService();
+  final FFmpegProcessor _ffmpegProcessor = FFmpegProcessor();
 
   VideoService({
     required FirestoreService firestoreService,
@@ -230,7 +230,7 @@ class VideoService extends BaseService {
 
             try {
               final audioPath =
-                  await _ffmpegService.extractAudio(videoFile.path);
+                  await _ffmpegProcessor.extractAudio(videoFile.path);
               extractedAudioFile = File(audioPath);
 
               if (!await extractedAudioFile.exists()) {
@@ -366,7 +366,7 @@ class VideoService extends BaseService {
         );
 
         // Extract and upload audio
-        final audioFile = await _ffmpegService.extractAudio(videoPath);
+        final audioFile = await _ffmpegProcessor.extractAudio(videoPath);
         final audioUrl = await _storageService.uploadAudio(
           userId: userId,
           videoId: videoId,

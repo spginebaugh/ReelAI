@@ -7,7 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../models/video.dart';
 import '../models/video_edit_state.dart';
 import '../models/filter_option.dart';
-import '../services/video_processing_service.dart';
+import '../services/video/processing/video_processor.dart';
 import '../utils/storage_paths.dart';
 import 'auth_provider.dart';
 import 'audio_player_provider.dart';
@@ -21,7 +21,7 @@ part 'video_edit_provider.g.dart';
 
 @riverpod
 class VideoEditController extends _$VideoEditController {
-  VideoProcessingService get _videoService => VideoProcessingService();
+  VideoProcessor get _videoService => VideoProcessor();
 
   @override
   Future<VideoEditState> build() async {
