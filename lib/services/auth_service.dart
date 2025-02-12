@@ -112,37 +112,4 @@ class AuthService extends BaseService {
       errorCategory: ErrorCategory.auth,
     );
   }
-
-  AppError _handleAuthException(FirebaseAuthException e) {
-    final String message;
-    final ErrorSeverity severity = ErrorSeverity.warning;
-
-    switch (e.code) {
-      case 'user-not-found':
-        message = 'No user found with this email.';
-        break;
-      case 'wrong-password':
-        message = 'Wrong password provided.';
-        break;
-      case 'email-already-in-use':
-        message = 'Email is already in use.';
-        break;
-      case 'invalid-email':
-        message = 'Invalid email address.';
-        break;
-      case 'weak-password':
-        message = 'Password is too weak.';
-        break;
-      default:
-        message = 'An error occurred. Please try again.';
-    }
-
-    return AppError(
-      title: 'Authentication Error',
-      message: message,
-      category: ErrorCategory.auth,
-      severity: severity,
-      context: {'code': e.code},
-    );
-  }
 }

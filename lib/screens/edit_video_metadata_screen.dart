@@ -11,9 +11,7 @@ import '../models/language.dart';
 import '../services/video_service.dart';
 import '../widgets/error_text.dart';
 import '../router/route_names.dart';
-import '../services/video_processing_service.dart';
 import '../state/audio_language_provider.dart';
-import '../state/audio_player_provider.dart';
 import '../state/subtitle_controller.dart';
 
 class EditVideoMetadataScreen extends HookConsumerWidget {

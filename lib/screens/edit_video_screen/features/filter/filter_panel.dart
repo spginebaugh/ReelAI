@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../state/video_edit_provider.dart';
-import '../../../../models/filter_option.dart';
 
 class FilterPanel extends ConsumerWidget {
   const FilterPanel({Key? key}) : super(key: key);

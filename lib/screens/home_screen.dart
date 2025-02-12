@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import '../constants/assets.dart';
-import '../models/video.dart';
 import '../router/route_names.dart';
 import '../services/permissions_service.dart';
 import '../services/video_service.dart';
 import '../state/user_provider.dart';
 import '../utils/app_theme.dart';
-import '../widgets/error_text.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

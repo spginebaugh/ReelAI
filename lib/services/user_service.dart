@@ -5,7 +5,6 @@ import 'firestore_service.dart';
 import 'user_storage_service.dart';
 import 'base_service.dart';
 import '../utils/error_handler.dart';
-import '../utils/json_utils.dart';
 
 part 'user_service.g.dart';
 

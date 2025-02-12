@@ -7,7 +7,6 @@ import '../utils/error_handler.dart';
 import '../utils/transaction_decorator.dart';
 import '../utils/transaction_middleware.dart';
 import '../utils/logger.dart';
-import '../utils/json_utils.dart';
 
 part 'firestore_service.g.dart';
 

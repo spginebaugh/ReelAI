@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../state/video_edit_provider.dart';
-import 'package:video_player/video_player.dart';
 
 class TrimPanel extends ConsumerWidget {
   const TrimPanel({Key? key}) : super(key: key);
