@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:reel_ai/models/video_edit_state.dart';
+import 'package:reel_ai/features/videos/models/video_edit_state.dart';
 
 /// Helper class for managing VideoEditState operations and updates.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/common/router/route_names.dart';
 import 'package:reel_ai/common/theme/app_theme.dart';
 

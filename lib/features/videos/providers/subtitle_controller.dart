@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-import 'package:reel_ai/models/subtitle_state.dart';
+import 'package:reel_ai/features/videos/models/subtitle_state.dart';
 import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
 

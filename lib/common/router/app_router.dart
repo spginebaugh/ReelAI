@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/features/camera/screens/camera_screen.dart';
 import 'package:reel_ai/features/videos/screens/edit_video_metadata_screen.dart';
 import 'package:reel_ai/features/videos/screens/edit_video_screen.dart';

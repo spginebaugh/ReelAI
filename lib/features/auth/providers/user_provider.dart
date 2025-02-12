@@ -1,11 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:reel_ai/models/user.dart';
-import 'package:reel_ai/services/firestore_service.dart';
+import 'package:reel_ai/common/models/user.dart';
+import 'package:reel_ai/common/services/firestore_service.dart';
 import 'package:reel_ai/features/auth/services/auth_service.dart';
-import 'package:reel_ai/services/user_service.dart';
-import 'package:reel_ai/services/user_storage_service.dart';
+import 'package:reel_ai/common/services/user_service.dart';
+import 'package:reel_ai/common/services/user_storage_service.dart';
 
 part 'user_provider.g.dart';
 

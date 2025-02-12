@@ -6,9 +6,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'package:reel_ai/models/video.dart';
-import 'package:reel_ai/models/language.dart';
-import 'package:reel_ai/services/video_service.dart';
+import 'package:reel_ai/features/videos/models/video.dart';
+import 'package:reel_ai/features/videos/models/language.dart';
+import 'package:reel_ai/common/services/video_service.dart';
 import 'package:reel_ai/common/widgets/error_text.dart';
 import 'package:reel_ai/common/router/route_names.dart';
 import 'package:reel_ai/features/videos/providers/audio_language_provider.dart';

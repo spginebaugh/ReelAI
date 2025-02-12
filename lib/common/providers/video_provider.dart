@@ -1,8 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:reel_ai/models/video.dart';
-import 'package:reel_ai/services/video_service.dart';
-import 'package:reel_ai/services/firestore_service.dart';
-import 'package:reel_ai/services/storage_service.dart';
+import 'package:reel_ai/features/videos/models/video.dart';
+import 'package:reel_ai/common/services/video_service.dart';
+import 'package:reel_ai/common/services/firestore_service.dart';
+import 'package:reel_ai/common/services/storage_service.dart';
 
 part 'video_provider.g.dart';
 

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/common/router/route_names.dart';
 import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 import 'package:reel_ai/features/videos/providers/audio_player_provider.dart';
 import 'package:reel_ai/features/videos/widgets/subtitle_display.dart';
-import 'package:reel_ai/screens/edit_video_screen/toolbar/edit_toolbar.dart';
-import 'package:reel_ai/screens/edit_video_screen/toolbar/panel_container.dart';
-import 'package:reel_ai/screens/edit_video_screen/features/video_player_section/video_player_section.dart';
+import 'package:reel_ai/features/videos/widgets/toolbar/edit_toolbar.dart';
+import 'package:reel_ai/features/videos/widgets/toolbar/panel_container.dart';
+import 'package:reel_ai/features/videos/widgets/toolbar/features/video_player_section/video_player_section.dart';
 
 class EditVideoScreen extends ConsumerStatefulWidget {
   final Video video;
