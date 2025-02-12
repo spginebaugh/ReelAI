@@ -1,12 +1,9 @@
 import 'package:just_audio/just_audio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'package:reel_ai/common/utils/storage_paths.dart';
-import 'package:reel_ai/common/utils/json_utils.dart';
 import 'package:reel_ai/common/utils/logger.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
 import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
@@ -151,6 +148,12 @@ class AudioPlayerController extends _$AudioPlayerController {
         language: language,
         format: 'mp3',
       );
+
+      if (audioUrl == null) {
+        Logger.error('No audio available for language: $language');
+        state = state.copyWith(isSyncing: false);
+        throw Exception('Audio not available for language: $language');
+      }
 
       // Stop current playback
       await state.audioPlayer!.stop();

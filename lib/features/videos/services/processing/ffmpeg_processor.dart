@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:reel_ai/common/utils/logger.dart';
-import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/features/videos/services/utils/video_error_handler.dart';
 import 'package:reel_ai/features/videos/services/utils/video_file_utils.dart';
 import 'package:reel_ai/features/videos/services/utils/ffmpeg_executor.dart';

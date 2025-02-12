@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/common/services/base_service.dart';
 import 'package:reel_ai/features/videos/services/utils/video_file_utils.dart';

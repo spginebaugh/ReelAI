@@ -1,16 +1,11 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:reel_ai/features/videos/models/video.dart';
 import 'package:reel_ai/features/videos/models/video_edit_state.dart';
 import 'package:reel_ai/features/videos/services/processing/video_processor.dart';
-import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
 import 'package:reel_ai/common/utils/logger.dart';
-import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
 import 'audio_player_provider.dart';
 import 'subtitle_controller.dart';
@@ -59,18 +54,6 @@ class VideoEditController extends _$VideoEditController {
     });
   }
 
-  Future<void> _cleanupPreviousFiles(List<String?> paths) async {
-    for (final path in paths) {
-      if (path != null) {
-        try {
-          await _videoService.cleanup([path]);
-        } catch (e) {
-          Logger.warning('Error cleaning up file', {'path': path, 'error': e});
-        }
-      }
-    }
-  }
-
   Future<void> _initializeVideoPlayer(File videoFile) async {
     Logger.video('Initializing video player system', {'path': videoFile.path});
 
@@ -107,7 +90,7 @@ class VideoEditController extends _$VideoEditController {
     VideoPlayerController controller,
     String videoId,
     String userId,
-    String subtitleUrl,
+    String? subtitleUrl,
   ) async {
     Logger.debug('Initializing subtitle system');
     await ref
@@ -195,42 +178,68 @@ class VideoEditController extends _$VideoEditController {
 
       // Wait for remaining resources and initialize systems in parallel
       Logger.debug('Waiting for remaining resources and initializing systems');
-      await Future.wait([
-        // Wait for subtitle URL and initialize subtitles
-        subtitleUrlFuture.then((subtitleUrl) async {
-          if (subtitleUrl != null) {
-            Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
-            await _initializeSubtitleSystem(
-              videoPlayerController,
-              video.id,
-              user.uid,
-              subtitleUrl,
-            );
-          }
-        }),
+      try {
+        await Future.wait([
+          // Wait for subtitle URL and initialize subtitles
+          subtitleUrlFuture.then((subtitleUrl) async {
+            if (subtitleUrl != null) {
+              try {
+                Logger.subtitle('Got subtitle URL', {'url': subtitleUrl});
+                await _initializeSubtitleSystem(
+                  videoPlayerController,
+                  video.id,
+                  user.uid,
+                  subtitleUrl,
+                );
+              } catch (e) {
+                Logger.warning(
+                    'Failed to initialize subtitles', {'error': e.toString()});
+                // Don't rethrow - allow video to continue without subtitles
+              }
+            }
+          }).catchError((e) {
+            Logger.warning(
+                'Error processing subtitles', {'error': e.toString()});
+            // Don't rethrow - allow video to continue without subtitles
+          }),
 
-        // Wait for audio URL and initialize audio
-        audioUrlFuture.then((audioUrl) async {
-          if (audioUrl != null) {
-            Logger.audio('Got audio URL', {'url': audioUrl});
-            await _initializeAudioSystem(videoPlayerController, video.id);
-          }
-        }),
-      ]);
+          // Wait for audio URL and initialize audio
+          audioUrlFuture.then((audioUrl) async {
+            if (audioUrl != null) {
+              try {
+                Logger.audio('Got audio URL', {'url': audioUrl});
+                await _initializeAudioSystem(videoPlayerController, video.id);
+              } catch (e) {
+                Logger.warning(
+                    'Failed to initialize audio', {'error': e.toString()});
+                // Don't rethrow - allow video to continue without audio
+              }
+            }
+          }).catchError((e) {
+            Logger.warning('Error processing audio', {'error': e.toString()});
+            // Don't rethrow - allow video to continue without audio
+          }),
+        ]);
+      } catch (e) {
+        // Log the error but don't fail video initialization
+        Logger.warning(
+            'Error initializing additional resources', {'error': e.toString()});
+      }
 
-      Logger.success('Video initialization completed successfully');
-      state = AsyncValue.data(state.value!.copyWith(
-        status: VideoEditStatus.ready,
-      ));
+      // If we get here, video is ready even if subtitles/audio failed
+      if (state.value?.status != VideoEditStatus.error) {
+        _updateState((currentState) => currentState.copyWith(
+              status: VideoEditStatus.ready,
+            ));
+      }
+
+      Logger.success('Video initialization completed');
     } catch (e, st) {
       Logger.error('Video initialization failed', {
         'error': e.toString(),
         'stackTrace': st.toString(),
       });
-      state = AsyncValue.data(VideoEditState.initial().copyWith(
-        status: VideoEditStatus.error,
-        errorMessage: e.toString(),
-      ));
+      state = AsyncValue.error(e, st);
     }
   }
 

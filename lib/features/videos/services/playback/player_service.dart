@@ -4,7 +4,6 @@ import 'package:video_player/video_player.dart';
 import 'package:reel_ai/common/utils/error_handler.dart';
 import 'package:reel_ai/common/services/base_service.dart';
 import 'package:reel_ai/features/videos/services/utils/video_error_handler.dart';
-import 'package:reel_ai/features/videos/services/utils/video_file_utils.dart';
 
 /// Service for managing video playback
 class PlayerService extends BaseService {

@@ -1,18 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
-import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/rendering.dart';
 
 import 'package:reel_ai/features/videos/models/subtitle_state.dart';
-import 'package:reel_ai/common/utils/storage_paths.dart';
 import 'package:reel_ai/features/auth/providers/auth_provider.dart';
 import 'package:reel_ai/common/utils/logger.dart';
 import 'package:reel_ai/features/videos/services/media/video_media_service.dart';
@@ -40,7 +35,7 @@ class SubtitleController extends _$SubtitleController {
 
   Future<void> initialize(
     VideoPlayerController controller,
-    String subtitleUrl,
+    String? subtitleUrl,
   ) async {
     Logger.debug('Subtitles: Initializing with video controller');
 
@@ -50,9 +45,19 @@ class SubtitleController extends _$SubtitleController {
     _videoController = controller;
     _videoController!.addListener(_onVideoStateChanged);
 
-    // Load initial subtitles
-    final subtitles = await _loadSubtitlesFromUrl(subtitleUrl);
-    state = state.copyWith(subtitles: subtitles);
+    if (subtitleUrl != null) {
+      // Load initial subtitles
+      try {
+        final subtitles = await _loadSubtitlesFromUrl(subtitleUrl);
+        state = state.copyWith(subtitles: subtitles);
+      } catch (e) {
+        Logger.warning('Failed to load subtitles', {'error': e.toString()});
+        state = state.copyWith(subtitles: []); // Clear subtitles on error
+      }
+    } else {
+      Logger.debug('No subtitle URL provided, skipping subtitle loading');
+      state = state.copyWith(subtitles: []); // Clear subtitles when no URL
+    }
 
     // Start position tracking
     _startPositionTracking();
@@ -60,7 +65,12 @@ class SubtitleController extends _$SubtitleController {
     Logger.success('Subtitles: Initialization complete');
   }
 
-  Future<List<SubtitleCue>> _loadSubtitlesFromUrl(String url) async {
+  Future<List<SubtitleCue>> _loadSubtitlesFromUrl(String? url) async {
+    if (url == null || url.isEmpty) {
+      Logger.warning('Empty or null subtitle URL provided');
+      return [];
+    }
+
     Logger.debug('Subtitles: Loading from URL', {'url': url});
 
     final stopwatch = Stopwatch()..start();
@@ -230,6 +240,16 @@ class SubtitleController extends _$SubtitleController {
         language: language,
         format: 'vtt',
       );
+
+      if (subtitleUrl == null) {
+        Logger.warning('No subtitles available for language: $language');
+        state = state.copyWith(
+          subtitles: [],
+          language: language,
+          isVisible: false,
+        );
+        return;
+      }
 
       // Load the subtitles
       final subtitles = await _loadSubtitlesFromUrl(subtitleUrl);

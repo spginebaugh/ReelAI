@@ -28,7 +28,6 @@ VideoService videoService(VideoServiceRef ref) {
 class VideoService extends BaseService {
   final FirestoreService _firestoreService;
   final StorageService _storageService;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final FFmpegProcessor _ffmpegProcessor = FFmpegProcessor();
 
   VideoService({
@@ -274,8 +273,8 @@ class VideoService extends BaseService {
               userId: userId,
               title: title,
               description: description,
-              videoUrl: videoUrl!,
-              audioUrl: audioUrl!,
+              videoUrl: videoUrl,
+              audioUrl: audioUrl,
               uploadTime: now,
               privacy: privacy,
               createdAt: now,
@@ -448,19 +447,6 @@ class VideoService extends BaseService {
                     ? 'Description is required'
                     : '',
           },
-        );
-
-        final video = Video(
-          id: videoId,
-          userId: '', // Not needed for update
-          title: title,
-          description: description,
-          videoUrl: '', // Not needed for update
-          audioUrl: '', // Not needed for update
-          uploadTime: DateTime.now(), // Not needed for update
-          createdAt: DateTime.now(), // Not needed for update
-          updatedAt: DateTime.now(),
-          isProcessing: false, // Not needed for update
         );
 
         final updateData = {

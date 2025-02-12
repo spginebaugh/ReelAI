@@ -13,12 +13,13 @@ class VideoMediaService {
       : _storage = storage ?? FirebaseStorage.instance;
 
   /// Fetches a media file from Firebase Storage
-  Future<String> fetchMediaUrl({
+  Future<String?> fetchMediaUrl({
     required String userId,
     required String videoId,
     required String type, // 'audio' or 'subtitles'
     String? language,
     String format = 'mp3',
+    int maxRetries = 3,
   }) async {
     final path = type == 'audio'
         ? StoragePaths.audioFile(userId, videoId,
@@ -26,26 +27,45 @@ class VideoMediaService {
         : StoragePaths.subtitlesFile(userId, videoId,
             lang: language ?? 'english', format: format);
 
-    try {
-      Logger.debug('Fetching $type URL', {
-        'path': path,
-        'language': language,
-      });
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        Logger.debug(
+            'Fetching $type URL (attempt ${attempt + 1}/$maxRetries)', {
+          'path': path,
+          'language': language,
+        });
 
-      final url = await _storage.ref(path).getDownloadURL();
+        final url = await _storage.ref(path).getDownloadURL();
 
-      Logger.success('Successfully fetched $type URL', {
-        'path': path,
-      });
+        Logger.success('Successfully fetched $type URL', {
+          'path': path,
+        });
 
-      return url;
-    } catch (e) {
-      Logger.warning('Failed to fetch $type URL', {
-        'path': path,
-        'error': e.toString(),
-      });
-      rethrow;
+        return url;
+      } catch (e) {
+        if (e.toString().contains('object-not-found')) {
+          if (attempt < maxRetries - 1) {
+            Logger.debug('$type not ready yet, retrying in 2 seconds...', {
+              'attempt': attempt + 1,
+              'maxRetries': maxRetries,
+            });
+            await Future.delayed(const Duration(seconds: 2));
+            continue;
+          }
+          Logger.warning('$type not found after $maxRetries attempts', {
+            'path': path,
+          });
+          return null;
+        }
+
+        Logger.warning('Failed to fetch $type URL', {
+          'path': path,
+          'error': e.toString(),
+        });
+        return null;
+      }
     }
+    return null;
   }
 
   /// Lists available languages for a media type

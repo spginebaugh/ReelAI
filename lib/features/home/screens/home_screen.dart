@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:reel_ai/common/constants/assets.dart';
 import 'package:reel_ai/common/router/route_names.dart';
 import 'package:reel_ai/common/theme/app_theme.dart';
-import 'package:reel_ai/common/utils/logger.dart';
 import 'package:reel_ai/features/camera/services/permissions_service.dart';
 import 'package:reel_ai/common/services/video_service.dart';
 import 'package:reel_ai/features/auth/providers/user_provider.dart';
