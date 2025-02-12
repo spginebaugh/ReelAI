@@ -1,6 +1,6 @@
 import 'dart:io';
-import '../../../utils/error_handler.dart';
-import 'video_file_utils.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/services/video/utils/video_file_utils.dart';
 
 /// Handles video-specific error handling and validation
 class VideoErrorHandler {

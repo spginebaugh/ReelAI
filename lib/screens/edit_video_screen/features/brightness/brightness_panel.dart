@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../state/video_edit_provider.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 
 class BrightnessPanel extends ConsumerWidget {
   const BrightnessPanel({Key? key}) : super(key: key);

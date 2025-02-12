@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../models/video.dart';
-import '../../../../state/subtitle_controller.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/providers/subtitle_controller.dart';
 import 'subtitle_menu.dart';
 
 class SubtitleButton extends ConsumerWidget {

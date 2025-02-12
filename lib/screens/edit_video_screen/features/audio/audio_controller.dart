@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../state/audio_language_provider.dart';
-import '../../../../state/audio_player_provider.dart';
+import 'package:reel_ai/features/videos/providers/audio_language_provider.dart';
+import 'package:reel_ai/features/videos/providers/audio_player_provider.dart';
 
 part 'audio_controller.g.dart';
 

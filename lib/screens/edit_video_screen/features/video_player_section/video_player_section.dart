@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:chewie/chewie.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../models/video_edit_state.dart';
+import 'package:reel_ai/models/video_edit_state.dart';
 
 class VideoPlayerSection extends ConsumerWidget {
   const VideoPlayerSection({

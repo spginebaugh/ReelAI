@@ -1,6 +1,6 @@
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
-import '../../../utils/error_handler.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
 
 /// A utility class to handle FFmpeg command execution and error handling
 class FFmpegExecutor {

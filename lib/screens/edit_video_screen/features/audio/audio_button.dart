@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../models/video.dart';
-import '../../../../state/audio_player_provider.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/providers/audio_player_provider.dart';
 import 'audio_menu.dart';
 
 class AudioButton extends ConsumerWidget {

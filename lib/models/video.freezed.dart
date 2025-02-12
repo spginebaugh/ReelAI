@@ -306,10 +306,10 @@ class _$VideoImpl extends _Video {
       {required this.id,
       required this.userId,
       required this.title,
-      this.description,
+      this.description = null,
       required this.videoUrl,
       required this.audioUrl,
-      this.thumbnailUrl,
+      this.thumbnailUrl = null,
       @TimestampConverter() required this.uploadTime,
       this.privacy = 'public',
       this.likesCount = 0,
@@ -331,12 +331,14 @@ class _$VideoImpl extends _Video {
   @override
   final String title;
   @override
+  @JsonKey()
   final String? description;
   @override
   final String videoUrl;
   @override
   final String audioUrl;
   @override
+  @JsonKey()
   final String? thumbnailUrl;
   @override
   @TimestampConverter()

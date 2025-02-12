@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/user.dart';
-import '../models/video.dart';
-import 'base_service.dart';
-import '../utils/error_handler.dart';
-import '../utils/transaction_decorator.dart';
-import '../utils/transaction_middleware.dart';
-import '../utils/logger.dart';
+import 'package:reel_ai/models/user.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/utils/transaction_decorator.dart';
+import 'package:reel_ai/common/utils/transaction_middleware.dart';
+import 'package:reel_ai/common/utils/logger.dart';
 
 part 'firestore_service.g.dart';
 

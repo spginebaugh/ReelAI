@@ -1,10 +1,10 @@
 import 'dart:io';
-import '../../../models/filter_option.dart';
-import '../../../utils/error_handler.dart';
-import '../../base_service.dart';
-import '../utils/ffmpeg_executor.dart';
-import '../utils/video_error_handler.dart';
-import '../utils/video_file_utils.dart';
+import 'package:reel_ai/models/filter_option.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/services/video/utils/ffmpeg_executor.dart';
+import 'package:reel_ai/services/video/utils/video_error_handler.dart';
+import 'package:reel_ai/services/video/utils/video_file_utils.dart';
 
 /// Handles low-level FFmpeg operations for video processing
 class FFmpegProcessor extends BaseService {

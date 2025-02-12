@@ -6,20 +6,6 @@ part of 'subtitle_state.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SubtitleEntryImpl _$$SubtitleEntryImplFromJson(Map<String, dynamic> json) =>
-    _$SubtitleEntryImpl(
-      start: _durationFromMillis((json['start'] as num).toInt()),
-      end: _durationFromMillis((json['end'] as num).toInt()),
-      text: json['text'] as String,
-    );
-
-Map<String, dynamic> _$$SubtitleEntryImplToJson(_$SubtitleEntryImpl instance) =>
-    <String, dynamic>{
-      'start': _millisFromDuration(instance.start),
-      'end': _millisFromDuration(instance.end),
-      'text': instance.text,
-    };
-
 _$SubtitleStateImpl _$$SubtitleStateImplFromJson(Map<String, dynamic> json) =>
     _$SubtitleStateImpl(
       subtitles: (json['subtitles'] as List<dynamic>?)

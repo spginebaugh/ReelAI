@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
-import '../utils/json_utils.dart';
+import 'package:reel_ai/common/utils/json_utils.dart';
 
 part 'user.freezed.dart';
 part 'user.g.dart';
@@ -16,9 +16,9 @@ class User with _$User {
     String? profilePictureUrl,
     String? profileThumbnailUrl,
     @Default(false) bool isDeleted,
-    String? deletedAt,
+    @Default(null) String? deletedAt,
     @TimestampConverter() required DateTime createdAt,
-    @TimestampConverter() DateTime? updatedAt,
+    @TimestampConverter() @Default(null) DateTime? updatedAt,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

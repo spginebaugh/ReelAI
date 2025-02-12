@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../models/filter_option.dart';
-import '../../../../state/video_edit_provider.dart';
+import 'package:reel_ai/models/filter_option.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 
 part 'filter_controller.g.dart';
 

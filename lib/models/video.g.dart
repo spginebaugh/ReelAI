@@ -10,10 +10,10 @@ _$VideoImpl _$$VideoImplFromJson(Map<String, dynamic> json) => _$VideoImpl(
       id: json['id'] as String,
       userId: json['userId'] as String,
       title: json['title'] as String,
-      description: json['description'] as String?,
+      description: json['description'] as String? ?? null,
       videoUrl: json['videoUrl'] as String,
       audioUrl: json['audioUrl'] as String,
-      thumbnailUrl: json['thumbnailUrl'] as String?,
+      thumbnailUrl: json['thumbnailUrl'] as String? ?? null,
       uploadTime:
           const TimestampConverter().fromJson(json['uploadTime'] as Timestamp),
       privacy: json['privacy'] as String? ?? 'public',

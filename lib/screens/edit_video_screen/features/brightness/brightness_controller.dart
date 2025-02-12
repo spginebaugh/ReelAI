@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../state/video_edit_provider.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 
 part 'brightness_controller.g.dart';
 

@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../utils/storage_paths.dart';
-import 'base_service.dart';
-import '../utils/error_handler.dart';
+import 'package:reel_ai/common/utils/storage_paths.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
 
 part 'public_storage_service.g.dart';
 

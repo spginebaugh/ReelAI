@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../models/video.dart';
-import '../../../../models/video_edit_state.dart';
-import '../../../../state/video_edit_provider.dart';
-import '../../../../router/route_names.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/models/video_edit_state.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
+import 'package:reel_ai/common/router/route_names.dart';
 
 class MetadataButton extends ConsumerWidget {
   final Video video;

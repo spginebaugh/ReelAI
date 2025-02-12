@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import '../../../utils/error_handler.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
 
 /// Utility class for common video file operations
 class VideoFileUtils {

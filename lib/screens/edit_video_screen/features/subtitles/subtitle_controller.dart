@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../state/subtitle_controller.dart';
+import 'package:reel_ai/features/videos/providers/subtitle_controller.dart';
 
 part 'subtitle_controller.g.dart';
 

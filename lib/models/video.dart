@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/json_utils.dart';
+import 'package:reel_ai/common/utils/json_utils.dart';
 
 part 'video.freezed.dart';
 part 'video.g.dart';
@@ -14,10 +14,10 @@ class Video with _$Video {
     required String id,
     required String userId,
     required String title,
-    String? description,
+    @Default(null) String? description,
     required String videoUrl,
     required String audioUrl,
-    String? thumbnailUrl,
+    @Default(null) String? thumbnailUrl,
     @TimestampConverter() required DateTime uploadTime,
     @Default('public') String privacy,
     @Default(0) int likesCount,

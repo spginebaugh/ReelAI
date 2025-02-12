@@ -3,8 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:reel_ai/router/app_router.dart';
-import 'package:reel_ai/utils/app_theme.dart';
+import 'package:reel_ai/common/router/app_router.dart';
+import 'package:reel_ai/common/theme/app_theme.dart';
 
 void main() async {
   try {

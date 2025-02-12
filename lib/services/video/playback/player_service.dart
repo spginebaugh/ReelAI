@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
-import '../../../utils/error_handler.dart';
-import '../../base_service.dart';
-import '../utils/video_error_handler.dart';
-import '../utils/video_file_utils.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/services/video/utils/video_error_handler.dart';
+import 'package:reel_ai/services/video/utils/video_file_utils.dart';
 
 /// Service for managing video playback
 class PlayerService extends BaseService {

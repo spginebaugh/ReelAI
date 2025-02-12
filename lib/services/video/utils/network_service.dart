@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../utils/error_handler.dart';
-import '../../base_service.dart';
-import 'video_file_utils.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/services/video/utils/video_file_utils.dart';
 
 /// Service for handling network operations related to videos
 class NetworkService extends BaseService {

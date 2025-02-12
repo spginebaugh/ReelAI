@@ -1,19 +1,19 @@
 import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/video.dart';
-import 'firestore_service.dart';
-import 'storage_service.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/services/firestore_service.dart';
+import 'package:reel_ai/services/storage_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'video/processing/ffmpeg_processor.dart';
-import 'base_service.dart';
-import '../utils/error_handler.dart';
-import '../utils/transaction_decorator.dart';
-import '../utils/transaction_middleware.dart';
-import '../utils/constants.dart';
-import '../utils/logger.dart';
-import '../utils/error_context.dart';
-import '../utils/json_utils.dart';
+import 'package:reel_ai/services/video/processing/ffmpeg_processor.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/utils/transaction_decorator.dart';
+import 'package:reel_ai/common/utils/transaction_middleware.dart';
+import 'package:reel_ai/common/constants/constants.dart';
+import 'package:reel_ai/common/utils/logger.dart';
+import 'package:reel_ai/common/utils/error_context.dart';
+import 'package:reel_ai/common/utils/json_utils.dart';
 
 part 'video_service.g.dart';
 

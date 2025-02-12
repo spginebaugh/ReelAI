@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../models/video_edit_state.dart';
-import '../../../../state/video_edit_provider.dart';
+import 'package:reel_ai/models/video_edit_state.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 
 class BrightnessButton extends ConsumerWidget {
   const BrightnessButton({Key? key}) : super(key: key);

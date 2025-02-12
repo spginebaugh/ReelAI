@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/user.dart';
-import 'firestore_service.dart';
-import 'user_storage_service.dart';
-import 'base_service.dart';
-import '../utils/error_handler.dart';
+import 'package:reel_ai/models/user.dart';
+import 'package:reel_ai/services/firestore_service.dart';
+import 'package:reel_ai/services/user_storage_service.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
 
 part 'user_service.g.dart';
 

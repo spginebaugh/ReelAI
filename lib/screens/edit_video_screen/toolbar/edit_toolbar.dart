@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../models/video.dart';
-import '../../../models/video_edit_state.dart';
-import '../../../state/video_edit_provider.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/models/video_edit_state.dart';
+import 'package:reel_ai/features/videos/providers/video_edit_provider.dart';
 import '../features/brightness/brightness_button.dart';
 import '../features/filter/filter_button.dart';
 import '../features/trim/trim_button.dart';

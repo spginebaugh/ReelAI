@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '../../../../models/video.dart';
-import '../../../../state/audio_language_provider.dart';
-import '../../../../state/audio_player_provider.dart';
-import '../../../../utils/language_utils.dart';
+import 'package:reel_ai/models/video.dart';
+import 'package:reel_ai/features/videos/providers/audio_language_provider.dart';
+import 'package:reel_ai/features/videos/providers/audio_player_provider.dart';
+import 'package:reel_ai/common/utils/language_utils.dart';
 import 'audio_controller.dart';
 
 class AudioMenu extends PopupMenuEntry<String> {

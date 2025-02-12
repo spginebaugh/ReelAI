@@ -1,12 +1,12 @@
 import 'dart:io';
-import '../../../models/filter_option.dart';
-import '../../../utils/error_handler.dart';
-import '../../base_service.dart';
-import 'ffmpeg_processor.dart';
-import '../utils/video_error_handler.dart';
-import '../utils/video_file_utils.dart';
-import '../utils/network_service.dart';
-import '../playback/player_service.dart';
+import 'package:reel_ai/models/filter_option.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/services/video/processing/ffmpeg_processor.dart';
+import 'package:reel_ai/services/video/utils/video_error_handler.dart';
+import 'package:reel_ai/services/video/utils/video_file_utils.dart';
+import 'package:reel_ai/services/video/utils/network_service.dart';
+import 'package:reel_ai/services/video/playback/player_service.dart';
 
 /// High-level video processing service that coordinates video operations
 class VideoProcessor extends BaseService {

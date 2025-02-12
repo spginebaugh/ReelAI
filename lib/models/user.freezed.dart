@@ -230,9 +230,9 @@ class _$UserImpl implements _User {
       this.profilePictureUrl,
       this.profileThumbnailUrl,
       this.isDeleted = false,
-      this.deletedAt,
+      this.deletedAt = null,
       @TimestampConverter() required this.createdAt,
-      @TimestampConverter() this.updatedAt});
+      @TimestampConverter() this.updatedAt = null});
 
   factory _$UserImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserImplFromJson(json);
@@ -253,11 +253,13 @@ class _$UserImpl implements _User {
   @JsonKey()
   final bool isDeleted;
   @override
+  @JsonKey()
   final String? deletedAt;
   @override
   @TimestampConverter()
   final DateTime createdAt;
   @override
+  @JsonKey()
   @TimestampConverter()
   final DateTime? updatedAt;
 

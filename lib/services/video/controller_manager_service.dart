@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import '../video/factories/chewie_controller_factory.dart';
-import '../video/factories/video_player_factory.dart';
+import 'package:reel_ai/services/video/factories/chewie_controller_factory.dart';
+import 'package:reel_ai/services/video/factories/video_player_factory.dart';
 
 class VideoControllerManager {
   /// Ensures all controllers are properly muted

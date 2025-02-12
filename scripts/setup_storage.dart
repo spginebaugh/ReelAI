@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../lib/utils/storage_paths.dart';
+import '../lib/common/utils/storage_paths.dart';
 
 Future<void> main() async {
   // Initialize Firebase

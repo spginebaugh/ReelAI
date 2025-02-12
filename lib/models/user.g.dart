@@ -14,11 +14,12 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
       profilePictureUrl: json['profilePictureUrl'] as String?,
       profileThumbnailUrl: json['profileThumbnailUrl'] as String?,
       isDeleted: json['isDeleted'] as bool? ?? false,
-      deletedAt: json['deletedAt'] as String?,
+      deletedAt: json['deletedAt'] as String? ?? null,
       createdAt:
           const TimestampConverter().fromJson(json['createdAt'] as Timestamp),
       updatedAt: _$JsonConverterFromJson<Timestamp, DateTime>(
-          json['updatedAt'], const TimestampConverter().fromJson),
+              json['updatedAt'], const TimestampConverter().fromJson) ??
+          null,
     );
 
 Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>

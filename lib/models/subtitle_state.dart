@@ -6,20 +6,6 @@ part 'subtitle_state.freezed.dart';
 part 'subtitle_state.g.dart';
 
 @freezed
-class SubtitleEntry with _$SubtitleEntry {
-  const factory SubtitleEntry({
-    @JsonKey(fromJson: _durationFromMillis, toJson: _millisFromDuration)
-    required Duration start,
-    @JsonKey(fromJson: _durationFromMillis, toJson: _millisFromDuration)
-    required Duration end,
-    required String text,
-  }) = _SubtitleEntry;
-
-  factory SubtitleEntry.fromJson(Map<String, dynamic> json) =>
-      _$SubtitleEntryFromJson(json);
-}
-
-@freezed
 class SubtitleState with _$SubtitleState {
   const factory SubtitleState({
     @Default([]) List<SubtitleCue> subtitles,
@@ -55,9 +41,6 @@ class SubtitleCue with _$SubtitleCue {
     );
   }
 }
-
-Duration _durationFromMillis(int millis) => Duration(milliseconds: millis);
-int _millisFromDuration(Duration duration) => duration.inMilliseconds;
 
 Duration _parseVTTTime(String timeString) {
   final parts = timeString.split(':');

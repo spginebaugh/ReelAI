@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../utils/storage_paths.dart';
-import 'base_service.dart';
-import '../utils/error_handler.dart';
-import '../utils/transaction_decorator.dart';
-import '../utils/transaction_middleware.dart';
+import 'package:reel_ai/common/utils/storage_paths.dart';
+import 'package:reel_ai/common/services/base_service.dart';
+import 'package:reel_ai/common/utils/error_handler.dart';
+import 'package:reel_ai/common/utils/transaction_decorator.dart';
+import 'package:reel_ai/common/utils/transaction_middleware.dart';
 
 part 'storage_service.g.dart';
 
