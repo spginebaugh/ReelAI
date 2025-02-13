@@ -133,16 +133,16 @@ class EditVideoMetadataScreen extends HookConsumerWidget {
                 content: Text(
                     '${targetLanguage.language.name} translation generated successfully'),
                 backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
               ),
             );
 
-            // Refresh video state to get new languages
-            debugPrint('🔄 Refreshing video state...');
-            ref.invalidate(videoPlayerFacadeProvider);
+            // Wait for the snackbar to be visible before navigating
+            await Future.delayed(const Duration(milliseconds: 500));
 
-            // Navigate back to edit screen
-            debugPrint('🔄 Navigating back to refresh video state...');
-            Navigator.of(context).pop();
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
           }
         } else {
           debugPrint('⚠️ Function returned success: false');

@@ -39,19 +39,34 @@ class VideoPlayerFacade extends _$VideoPlayerFacade {
 
   @override
   Future<VideoPlayerState> build() async {
-    ref.onDispose(() {
-      state.whenData((state) {
+    ref.onDispose(() async {
+      try {
+        final currentState = state.value;
+        if (currentState == null) return;
+
         Logger.state('Disposing video player state');
+
         // Remove subtitle listener if exists
-        if (state.videoController != null) {
-          state.videoController!.removeListener(_updateSubtitleText);
+        if (currentState.videoController != null) {
+          currentState.videoController!.removeListener(_updateSubtitleText);
         }
-        ControllerDisposer.disposeControllers(
-          videoController: state.videoController,
-          chewieController: state.chewieController,
+
+        // Dispose controllers
+        await ControllerDisposer.disposeControllers(
+          videoController: currentState.videoController,
+          chewieController: currentState.chewieController,
         );
-        _cleanupFiles(state);
-      });
+
+        // Cleanup files
+        if (currentState.videoFile != null) {
+          await currentState.videoFile!.delete().catchError((_) {
+            // Ignore file deletion errors during cleanup
+          });
+        }
+      } catch (e) {
+        Logger.warning(
+            'Error during video player disposal', {'error': e.toString()});
+      }
     });
 
     return VideoPlayerState.initial();
@@ -64,18 +79,22 @@ class VideoPlayerFacade extends _$VideoPlayerFacade {
     );
   }
 
-  void _cleanupFiles(VideoPlayerState state) {
-    if (state.videoFile != null) {
-      state.videoFile!.delete().ignore();
-    }
-  }
-
   Future<void> initialize(Video video) async {
-    if (state.value?.status == VideoPlayerStatus.ready) return;
-
-    state = const AsyncValue.loading();
-
     try {
+      // If we're already initialized with this video, don't reinitialize
+      if (state.value?.status == VideoPlayerStatus.ready &&
+          state.value?.video?.id == video.id) {
+        return;
+      }
+
+      // Set loading state
+      state = const AsyncValue.loading();
+
+      // Clean up any existing controllers
+      if (state.value?.videoController != null) {
+        await _disposeControllers(state.value!);
+      }
+
       // Get user
       final user = ref.read(authStateProvider).requireValue!;
 
