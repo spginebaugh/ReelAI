@@ -144,3 +144,86 @@ interface WhisperResponse {
     no_speech_prob: number;
   }>;
 }
+
+interface VideoMetadata {
+  title: string;
+  description: string;
+}
+
+/**
+ * Generates video title and description from transcript using GPT-4
+ * @param {WhisperResponse} transcript - The transcript data from Whisper API
+ * @return {Promise<VideoMetadata>} - Resolve w/ generated title and description
+ */
+export async function generateVideoMetadata(
+  transcript: WhisperResponse,
+): Promise<VideoMetadata> {
+  logger.info("🤖 Starting metadata generation with GPT-4...", {
+    transcriptLength: transcript.text.length,
+    language: transcript.language,
+  });
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openAiApiKey.value()}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a professional video metadata generator. "+
+              `Your task is to:
+1. Generate a concise, engaging title (max 100 characters)
+2. Create a clear, informative description (max 500 characters)
+Both should accurately reflect the content while being SEO-friendly.
+Respond in JSON format: {"title": "...", "description": "..."}`,
+          },
+          {
+            role: "user",
+            content:
+              "Generate title and description for this video "+
+              `transcript:\n${transcript.text}`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      logger.error("❌ GPT-4 API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error,
+      });
+      throw new Error(
+        `GPT-4 API error: ${response.status} ${response.statusText} - ${error}`
+      );
+    }
+
+    const result = await response.json();
+    const metadata = JSON.parse(result.choices[0].message.content);
+
+    logger.info("✅ Successfully generated video metadata:", {
+      titleLength: metadata.title.length,
+      descriptionLength: metadata.description.length,
+    });
+
+    return {
+      title: metadata.title.trim(),
+      description: metadata.description.trim(),
+    };
+  } catch (error) {
+    logger.error("❌ Failed to generate video metadata:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
+}

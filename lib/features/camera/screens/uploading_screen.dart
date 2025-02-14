@@ -57,12 +57,8 @@ class UploadingScreen extends HookConsumerWidget {
           if (!isMounted()) return;
 
           // Use the captured context and verify it's still valid
-          if (video != null) {
-            currentContext.pushNamed(
-              RouteNames.video,
-              pathParameters: {'id': video.id},
-              extra: video,
-            );
+          if (currentContext.mounted) {
+            currentContext.goNamed(RouteNames.home);
           }
         } catch (e) {
           debugPrint('Error uploading video: $e');

@@ -4,8 +4,13 @@ import * as os from "os";
 import * as path from "path";
 import {onObjectFinalized} from "firebase-functions/v2/storage";
 import {getStorage} from "firebase-admin/storage";
+import {getFirestore} from "firebase-admin/firestore";
 import {convertWavToMp3} from "../services/ffmpeg";
-import {generateTranscript, openAiApiKey} from "../services/openai";
+import {
+  generateTranscript,
+  generateVideoMetadata,
+  openAiApiKey,
+} from "../services/openai";
 import {
   convertJsonToSRT,
   convertJsonToVTT,
@@ -70,6 +75,41 @@ export const onAudioUploaded = onObjectFinalized({
       // Generate transcript from the MP3 file
       logger.info("🎙️ Generating transcript from MP3...");
       const transcript = await generateTranscript(tempOutputPath);
+
+      // Generate video metadata from transcript
+      logger.info("📝 Generating video metadata from transcript...");
+      try {
+        const metadata = await generateVideoMetadata(transcript);
+
+        // Extract video ID from the path
+        // Assuming path format: videos/{videoId}/audio/audio_english.wav
+        const pathParts = event.data.name.split("/");
+        const videoId = pathParts[1]; // Index 1 should be the videoId
+
+        // Update video metadata in Firestore
+        const db = getFirestore();
+        await db.collection("videos").doc(videoId).update({
+          title: metadata.title,
+          description: metadata.description,
+          updatedAt: new Date(),
+        });
+
+        logger.info("✅ Successfully updated video metadata:", {
+          videoId,
+          title: metadata.title,
+          descriptionLength: metadata.description.length,
+        });
+      } catch (metadataError) {
+        // Log error but continue with transcript processing
+        logger.error("⚠️ Failed to generate or save video metadata:", {
+          error: metadataError instanceof Error ?
+            metadataError.message :
+            "Unknown error",
+          stack: metadataError instanceof Error ?
+            metadataError.stack :
+            undefined,
+        });
+      }
 
       // Generate all subtitle formats
       logger.info("📝 Converting transcript to different subtitle formats...");

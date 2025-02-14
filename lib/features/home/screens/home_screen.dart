@@ -211,12 +211,8 @@ class HomeScreen extends ConsumerWidget {
                             Navigator.of(context).pop();
                           }
 
-                          if (context.mounted && video != null) {
-                            context.pushNamed(
-                              RouteNames.video,
-                              pathParameters: {'id': video.id},
-                              extra: video,
-                            );
+                          if (context.mounted) {
+                            context.goNamed(RouteNames.home);
                           }
                         } catch (e) {
                           if (context.mounted) {

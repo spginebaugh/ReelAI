@@ -30,6 +30,7 @@ const os = __importStar(require("os"));
 const path = __importStar(require("path"));
 const storage_1 = require("firebase-functions/v2/storage");
 const storage_2 = require("firebase-admin/storage");
+const firestore_1 = require("firebase-admin/firestore");
 const ffmpeg_1 = require("../services/ffmpeg");
 const openai_1 = require("../services/openai");
 const subtitle_converter_1 = require("../services/subtitle-converter");
@@ -83,6 +84,38 @@ exports.onAudioUploaded = (0, storage_1.onObjectFinalized)({
             // Generate transcript from the MP3 file
             logger.info("🎙️ Generating transcript from MP3...");
             const transcript = await (0, openai_1.generateTranscript)(tempOutputPath);
+            // Generate video metadata from transcript
+            logger.info("📝 Generating video metadata from transcript...");
+            try {
+                const metadata = await (0, openai_1.generateVideoMetadata)(transcript);
+                // Extract video ID from the path
+                // Assuming path format: videos/{videoId}/audio/audio_english.wav
+                const pathParts = event.data.name.split("/");
+                const videoId = pathParts[1]; // Index 1 should be the videoId
+                // Update video metadata in Firestore
+                const db = (0, firestore_1.getFirestore)();
+                await db.collection("videos").doc(videoId).update({
+                    title: metadata.title,
+                    description: metadata.description,
+                    updatedAt: new Date(),
+                });
+                logger.info("✅ Successfully updated video metadata:", {
+                    videoId,
+                    title: metadata.title,
+                    descriptionLength: metadata.description.length,
+                });
+            }
+            catch (metadataError) {
+                // Log error but continue with transcript processing
+                logger.error("⚠️ Failed to generate or save video metadata:", {
+                    error: metadataError instanceof Error ?
+                        metadataError.message :
+                        "Unknown error",
+                    stack: metadataError instanceof Error ?
+                        metadataError.stack :
+                        undefined,
+                });
+            }
             // Generate all subtitle formats
             logger.info("📝 Converting transcript to different subtitle formats...");
             const srtContent = (0, subtitle_converter_1.convertJsonToSRT)(transcript);
